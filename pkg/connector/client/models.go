@@ -146,18 +146,6 @@ type TeamsResponse struct {
 	Results []*Team     `json:"data"`
 }
 
-type UpdateTeamMembersBody struct {
-	Team struct {
-		Id            string `json:"id"`
-		Type          string `json:"type"` // Type should always be 'team'.
-		Relationships struct {
-			Users struct {
-				Data []DataDetailPair `json:"data"`
-			} `json:"users"`
-		} `json:"relationships"`
-	} `json:"data"`
-}
-
 type UpdateTeamBody struct {
 	Id            string                  `json:"id"`
 	Type          string                  `json:"type"` // Type should always be 'team'.
@@ -173,4 +161,16 @@ type UpdateTeamRelationships struct {
 type DataDetailPair struct {
 	Id   int    `json:"id"`
 	Type string `json:"type"`
+}
+
+type UpdateUsersProfileBody struct {
+	Id            int                      `json:"id"`
+	Type          string                   `json:"type"`
+	Relationships UserProfileRelationships `json:"relationships"`
+}
+
+type UserProfileRelationships struct {
+	Profile struct {
+		Data DataDetailPair `json:"data"`
+	} `json:"profile"`
 }

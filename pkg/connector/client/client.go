@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
@@ -243,6 +244,52 @@ func (c *OutreachClient) UpdateTeamMembers(ctx context.Context, teamID string, t
 	return nil
 }
 
+func (c *OutreachClient) UpdateUserProfile(ctx context.Context, userID string, profileID int) error {
+	var requestBody struct {
+		Data UpdateUsersProfileBody `json:"data"`
+	}
+
+	newProfile := DataDetailPair{
+		Id:   profileID,
+		Type: "profile",
+	}
+
+	numericUserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return err
+	}
+
+	requestBody.Data = UpdateUsersProfileBody{
+		Id:   numericUserID,
+		Type: "user",
+		Relationships: UserProfileRelationships{
+			Profile: struct {
+				Data DataDetailPair `json:"data"`
+			}{
+				Data: newProfile,
+			},
+		},
+	}
+
+	userURL, err := url.JoinPath(baseURL, usersEP, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest(
+		ctx,
+		http.MethodPatch,
+		userURL,
+		nil,
+		requestBody,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *OutreachClient) doRequest(
 	ctx context.Context,
 	method string,
@@ -278,6 +325,16 @@ func (c *OutreachClient) doRequest(
 
 	opts := []uhttp.RequestOption{uhttp.WithBearerToken(token)} //, uhttp.WithAcceptJSONHeader(), uhttp.WithContentTypeJSONHeader()}
 	if body != nil {
+		// Use json.Marshal to convert the struct into a []byte slice.
+		//bodyBytes, err := json.Marshal(body)
+		//if err != nil {
+		//	return nil, err
+		//}
+		//
+		//logger := ctxzap.Extract(ctx)
+		//logger.Info(fmt.Sprintf("_____ BYTES BODY: %v _____", string(bodyBytes)))
+		//uhttp.WithBody(bodyBytes)
+
 		opts = append(opts, uhttp.WithJSONBody(body), uhttp.WithContentType("application/vnd.api+json"))
 	}
 

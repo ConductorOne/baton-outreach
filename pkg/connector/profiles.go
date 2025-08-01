@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -12,6 +13,7 @@ import (
 )
 
 const profilePermissionName = "assigned"
+const defaultProfileID = 2 // This is the ID for the 'Default' profile, a system-provided profile.
 
 type profileBuilder struct {
 	client *client.OutreachClient
@@ -71,6 +73,33 @@ func (b *profileBuilder) Entitlements(_ context.Context, resource *v2.Resource, 
 // Grants function gets implemented on the users resource, since the users records have that data.
 func (b *profileBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
+}
+
+func (b *profileBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+	profileID, err := strconv.Atoi(entitlement.Resource.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+	userID := principal.Id.Resource
+
+	err = b.client.UpdateUserProfile(ctx, userID, profileID)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (b *profileBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	profileID := defaultProfileID
+	userID := grant.Principal.Id.Resource
+
+	err := b.client.UpdateUserProfile(ctx, userID, profileID)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func parseIntoProfileResource(prof client.Profile) (*v2.Resource, error) {
