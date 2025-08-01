@@ -13,6 +13,8 @@ import (
 const (
 	baseURL = "https://api.outreach.io/api/v2"
 	usersEP = "users"
+	teamsEP = "teams"
+	rolesEP = "roles"
 )
 
 type OutreachClient struct {
@@ -38,12 +40,12 @@ func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) 
 	if nextPageLink != "" {
 		requestURL = nextPageLink
 	} else {
-		userURL, err := url.JoinPath(baseURL, usersEP)
+		usersURL, err := url.JoinPath(baseURL, usersEP)
 		if err != nil {
 			return nil, "", err
 		}
 
-		requestURL = userURL
+		requestURL = usersURL
 	}
 
 	_, err := c.doRequest(
@@ -74,12 +76,12 @@ func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) 
 	if nextPageLink != "" {
 		requestURL = nextPageLink
 	} else {
-		userURL, err := url.JoinPath(baseURL, usersEP)
+		teamsURL, err := url.JoinPath(baseURL, teamsEP)
 		if err != nil {
 			return nil, "", err
 		}
 
-		requestURL = userURL
+		requestURL = teamsURL
 	}
 
 	_, err := c.doRequest(
@@ -110,12 +112,12 @@ func (c *OutreachClient) ListAllRoles(ctx context.Context, nextPageLink string) 
 	if nextPageLink != "" {
 		requestURL = nextPageLink
 	} else {
-		userURL, err := url.JoinPath(baseURL, usersEP)
+		rolesURL, err := url.JoinPath(baseURL, rolesEP)
 		if err != nil {
 			return nil, "", err
 		}
 
-		requestURL = userURL
+		requestURL = rolesURL
 	}
 
 	_, err := c.doRequest(

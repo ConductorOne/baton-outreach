@@ -14,7 +14,7 @@ type userBuilder struct {
 	client *client.OutreachClient
 }
 
-func (b *userBuilder) ResourceType(ctx context.Context) *v2.ResourceType {
+func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 	return userResourceType
 }
 
@@ -95,6 +95,8 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	return ret, nil
 }
 
-func newUserBuilder() *userBuilder {
-	return &userBuilder{}
+func newUserBuilder(c *client.OutreachClient) *userBuilder {
+	return &userBuilder{
+		client: c,
+	}
 }
