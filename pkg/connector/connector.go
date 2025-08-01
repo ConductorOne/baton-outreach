@@ -20,7 +20,7 @@ func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.Resour
 	return []connectorbuilder.ResourceSyncer{
 		newUserBuilder(d.client),
 		newTeamBuilder(d.client),
-		//newRoleBuilder(d.client),
+		newProfileBuilder(d.client),
 	}
 }
 
@@ -34,7 +34,7 @@ func (d *Connector) Asset(_ context.Context, _ *v2.AssetRef) (string, io.ReadClo
 func (d *Connector) Metadata(_ context.Context) (*v2.ConnectorMetadata, error) {
 	return &v2.ConnectorMetadata{
 		DisplayName: "Outreach",
-		Description: "Baton connector to sync users, teams and roles from Outreach",
+		Description: "Baton connector to sync users, teams and profiles from Outreach",
 	}, nil
 }
 

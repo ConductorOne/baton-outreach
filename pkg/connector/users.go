@@ -2,11 +2,14 @@ package connector
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
+	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
 
@@ -56,29 +59,29 @@ func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *paginat
 	return nil, "", nil, nil
 }
 
-// Grants implements the Grants function for roles resource.
+// Grants implements the Grants function for profiles resource.
 func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	var grantResources []*v2.Grant
-	//userID := resource.Id.Resource
-	//
-	//user, err := b.client.GetUserByID(ctx, userID)
-	//if err != nil {
-	//	return nil, "", nil, err
-	//}
-	//
-	//if user.Relationships == nil || user.Relationships.Role == nil {
-	//	return nil, "", nil, fmt.Errorf("user {%s} role is missing", userID)
-	//}
-	//
-	//userRole := user.Relationships.Role
-	//roleResource := &v2.Resource{
-	//	Id: &v2.ResourceId{
-	//		ResourceType: roleResourceType.Id,
-	//		Resource:     userRole.Data.Id,
-	//	},
-	//}
-	//
-	//grantResources = append(grantResources, grant.NewGrant(roleResource, rolePermissionName, resource))
+	userID := resource.Id.Resource
+
+	user, err := b.client.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, "", nil, err
+	}
+
+	if user.Relationships == nil || user.Relationships.Profile == nil {
+		return nil, "", nil, fmt.Errorf("user {%s} profile is missing", userID)
+	}
+
+	userProfile := user.Relationships.Profile
+	profileResource := &v2.Resource{
+		Id: &v2.ResourceId{
+			ResourceType: profileResourceType.Id,
+			Resource:     strconv.Itoa(userProfile.Data.Id),
+		},
+	}
+
+	grantResources = append(grantResources, grant.NewGrant(profileResource, profilePermissionName, resource))
 
 	return grantResources, "", nil, nil
 }

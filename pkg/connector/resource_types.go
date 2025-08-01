@@ -17,8 +17,8 @@ var teamResourceType = &v2.ResourceType{
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
 }
 
-var roleResourceType = &v2.ResourceType{
-	Id:          "role",
-	DisplayName: "Role",
+var profileResourceType = &v2.ResourceType{
+	Id:          "profile",
+	DisplayName: "Profile",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_ROLE},
 }

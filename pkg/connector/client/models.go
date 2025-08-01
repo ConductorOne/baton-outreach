@@ -80,9 +80,9 @@ type UserAttributes struct {
 }
 
 type UserRelationships struct {
-	Role *struct {
+	Profile *struct {
 		Data *DataDetailPair `json:"data,omitempty"`
-	} `json:"role,omitempty"`
+	} `json:"profile,omitempty"`
 	Teams *struct {
 		Data *[]DataDetailPair `json:"data,omitempty"`
 	} `json:"teams,omitempty"`
@@ -100,28 +100,23 @@ type UsersResponse struct {
 	Results []*User     `json:"data"`
 }
 
-type RoleAttributes struct {
-	CreatedAt time.Time `json:"createdAt"`
-	Name      string    `json:"name"`
-	UpdatedAt time.Time `json:"updatedAt"`
+type ProfileAttributes struct {
+	CreatedAt string `json:"createdAt"`
+	IsAdmin   bool   `json:"isAdmin"`
+	Name      string `json:"name"`
+	SpecialId string `json:"specialId"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
-type RoleRelationships struct {
-	ParentRole *struct {
-		Data *DataDetailPair `json:"data,omitempty"`
-	} `json:"parentRole,omitempty"`
+type Profile struct {
+	Attributes ProfileAttributes `json:"attributes"`
+	Id         int               `json:"id"`
+	Type       string            `json:"type"`
 }
 
-type Role struct {
-	Attributes    RoleAttributes     `json:"attributes"`
-	Id            int                `json:"id"`
-	Relationships *RoleRelationships `json:"relationships,omitempty"`
-	Type          string             `json:"type"`
-}
-
-type RolesResponse struct {
+type ProfilesResponse struct {
 	Links   *Pagination `json:"links,omitempty"`
-	Results []*Role     `json:"data"`
+	Results []*Profile  `json:"data"`
 }
 
 type TeamAttributes struct {
