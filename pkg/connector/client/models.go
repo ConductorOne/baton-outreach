@@ -193,7 +193,7 @@ type TeamAttributes struct {
 type Team struct {
 	Attributes    TeamAttributes `json:"attributes"`
 	Id            int            `json:"id"`
-	Relationships struct {
+	Relationships *struct {
 		Batches []struct {
 			Links struct {
 				Related string `json:"related"`
@@ -222,8 +222,8 @@ type Team struct {
 				Id   int    `json:"id"`
 				Type string `json:"type"`
 			} `json:"data"`
-		} `json:"users"`
-	} `json:"relationships"`
+		} `json:"users,omitempty"`
+	} `json:"relationships,omitempty"`
 	Type string `json:"type"`
 }
 

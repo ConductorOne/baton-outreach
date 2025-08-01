@@ -30,7 +30,7 @@ func (d *Connector) Asset(_ context.Context, _ *v2.AssetRef) (string, io.ReadClo
 }
 
 // Metadata returns metadata about the connector.
-func (d *Connector) Metadata(ctx context.Context) (*v2.ConnectorMetadata, error) {
+func (d *Connector) Metadata(_ context.Context) (*v2.ConnectorMetadata, error) {
 	return &v2.ConnectorMetadata{
 		DisplayName: "Outreach",
 		Description: "Baton connector to sync users, teams and roles from Outreach",

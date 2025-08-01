@@ -103,6 +103,30 @@ func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) 
 	return response.Results, nextLink, nil
 }
 
+func (c *OutreachClient) GetTeamByID(ctx context.Context, teamID string) (*Team, error) {
+	var response struct {
+		Team *Team `json:"data"`
+	}
+
+	teamURL, err := url.JoinPath(baseURL, teamsEP, teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		teamURL,
+		&response,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Team, nil
+}
+
 func (c *OutreachClient) ListAllRoles(ctx context.Context, nextPageLink string) ([]*Role, string, error) {
 	var (
 		requestURL string
