@@ -147,7 +147,7 @@ type TeamsResponse struct {
 }
 
 type UpdateTeamBody struct {
-	Id            string                  `json:"id"`
+	Id            int                     `json:"id"`
 	Type          string                  `json:"type"` // Type should always be 'team'.
 	Relationships UpdateTeamRelationships `json:"relationships"`
 }
@@ -173,4 +173,17 @@ type UserProfileRelationships struct {
 	Profile struct {
 		Data DataDetailPair `json:"data"`
 	} `json:"profile"`
+}
+
+type NewUserBody struct {
+	Data struct {
+		Type       string            `json:"type"` // The type should always be 'user'.
+		Attributes NewUserAttributes `json:"attributes"`
+	} `json:"data"`
+}
+
+type NewUserAttributes struct {
+	Email     string `json:"email"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }

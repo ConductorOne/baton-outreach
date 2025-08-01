@@ -112,6 +112,76 @@ func (c *OutreachClient) GetUserByID(ctx context.Context, userID string) (*User,
 	return response.User, nil
 }
 
+func (c *OutreachClient) UpdateUserProfile(ctx context.Context, userID string, profileID int) error {
+	var requestBody struct {
+		Data UpdateUsersProfileBody `json:"data"`
+	}
+
+	newProfile := DataDetailPair{
+		Id:   profileID,
+		Type: "profile",
+	}
+
+	numericUserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return err
+	}
+
+	requestBody.Data = UpdateUsersProfileBody{
+		Id:   numericUserID,
+		Type: "user",
+		Relationships: UserProfileRelationships{
+			Profile: struct {
+				Data DataDetailPair `json:"data"`
+			}{
+				Data: newProfile,
+			},
+		},
+	}
+
+	userURL, err := url.JoinPath(baseURL, usersEP, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest(
+		ctx,
+		http.MethodPatch,
+		userURL,
+		nil,
+		requestBody,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OutreachClient) CreateUser(ctx context.Context, newUserInfo NewUserBody) (*User, error) {
+	var response struct {
+		User *User `json:"data"`
+	}
+
+	userURL, err := url.JoinPath(baseURL, usersEP)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.doRequest(
+		ctx,
+		http.MethodPost,
+		userURL,
+		&response,
+		newUserInfo,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.User, nil
+}
+
 func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) ([]*Team, string, error) {
 	var (
 		requestURL string
@@ -213,8 +283,13 @@ func (c *OutreachClient) UpdateTeamMembers(ctx context.Context, teamID string, t
 		Data UpdateTeamBody `json:"data"`
 	}
 
+	numericTeamID, err := strconv.Atoi(teamID)
+	if err != nil {
+		return err
+	}
+
 	requestBody.Data = UpdateTeamBody{
-		Id:   teamID,
+		Id:   numericTeamID,
 		Type: "team",
 		Relationships: UpdateTeamRelationships{
 			Users: struct {
@@ -234,52 +309,6 @@ func (c *OutreachClient) UpdateTeamMembers(ctx context.Context, teamID string, t
 		ctx,
 		http.MethodPatch,
 		teamURL,
-		nil,
-		requestBody,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *OutreachClient) UpdateUserProfile(ctx context.Context, userID string, profileID int) error {
-	var requestBody struct {
-		Data UpdateUsersProfileBody `json:"data"`
-	}
-
-	newProfile := DataDetailPair{
-		Id:   profileID,
-		Type: "profile",
-	}
-
-	numericUserID, err := strconv.Atoi(userID)
-	if err != nil {
-		return err
-	}
-
-	requestBody.Data = UpdateUsersProfileBody{
-		Id:   numericUserID,
-		Type: "user",
-		Relationships: UserProfileRelationships{
-			Profile: struct {
-				Data DataDetailPair `json:"data"`
-			}{
-				Data: newProfile,
-			},
-		},
-	}
-
-	userURL, err := url.JoinPath(baseURL, usersEP, userID)
-	if err != nil {
-		return err
-	}
-
-	_, err = c.doRequest(
-		ctx,
-		http.MethodPatch,
-		userURL,
 		nil,
 		requestBody,
 	)
@@ -323,18 +352,8 @@ func (c *OutreachClient) doRequest(
 		token = accessToken.AccessToken
 	}
 
-	opts := []uhttp.RequestOption{uhttp.WithBearerToken(token)} //, uhttp.WithAcceptJSONHeader(), uhttp.WithContentTypeJSONHeader()}
+	opts := []uhttp.RequestOption{uhttp.WithBearerToken(token)}
 	if body != nil {
-		// Use json.Marshal to convert the struct into a []byte slice.
-		//bodyBytes, err := json.Marshal(body)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//
-		//logger := ctxzap.Extract(ctx)
-		//logger.Info(fmt.Sprintf("_____ BYTES BODY: %v _____", string(bodyBytes)))
-		//uhttp.WithBody(bodyBytes)
-
 		opts = append(opts, uhttp.WithJSONBody(body), uhttp.WithContentType("application/vnd.api+json"))
 	}
 

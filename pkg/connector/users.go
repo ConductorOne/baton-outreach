@@ -8,6 +8,7 @@ import (
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
+	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
@@ -84,6 +85,77 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 	grantResources = append(grantResources, grant.NewGrant(profileResource, profilePermissionName, resource))
 
 	return grantResources, "", nil, nil
+}
+
+func (b *userBuilder) CreateAccountCapabilityDetails(_ context.Context) (*v2.CredentialDetailsAccountProvisioning, annotations.Annotations, error) {
+	return &v2.CredentialDetailsAccountProvisioning{
+		SupportedCredentialOptions: []v2.CapabilityDetailCredentialOption{
+			v2.CapabilityDetailCredentialOption_CAPABILITY_DETAIL_CREDENTIAL_OPTION_NO_PASSWORD,
+		},
+		PreferredCredentialOption: v2.CapabilityDetailCredentialOption_CAPABILITY_DETAIL_CREDENTIAL_OPTION_NO_PASSWORD,
+	}, nil, nil
+}
+
+func (b *userBuilder) CreateAccount(
+	ctx context.Context,
+	accountInfo *v2.AccountInfo,
+	_ *v2.CredentialOptions,
+) (connectorbuilder.CreateAccountResponse, []*v2.PlaintextData, annotations.Annotations, error) {
+	newUserInfo, err := createNewUserInfo(accountInfo)
+	if err != nil {
+		return nil, nil, annotations.Annotations{}, err
+	}
+
+	newUser, err := b.client.CreateUser(ctx, *newUserInfo)
+	if err != nil {
+		return nil, nil, annotations.Annotations{}, err
+	}
+
+	userResource, err := parseIntoUserResource(*newUser)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	caResponse := &v2.CreateAccountResponse_SuccessResult{
+		Resource: userResource,
+	}
+
+	return caResponse, nil, nil, nil
+}
+
+func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error) {
+	pMap := accountInfo.Profile.AsMap()
+
+	firstName, ok := pMap["first_name"].(string)
+	if !ok || firstName == "" {
+		return nil, fmt.Errorf("first_name is required")
+	}
+
+	lastName, ok := pMap["last_name"].(string)
+	if !ok || lastName == "" {
+		return nil, fmt.Errorf("last_name is required")
+	}
+
+	email, ok := pMap["email"].(string)
+	if !ok || email == "" {
+		return nil, fmt.Errorf("email is required")
+	}
+
+	newUserInfo := &client.NewUserBody{
+		Data: struct {
+			Type       string                   `json:"type"` // The type should always be 'user'.
+			Attributes client.NewUserAttributes `json:"attributes"`
+		}{
+			Type: "user",
+			Attributes: client.NewUserAttributes{
+				Email:     email,
+				FirstName: firstName,
+				LastName:  lastName,
+			},
+		},
+	}
+
+	return newUserInfo, nil
 }
 
 func parseIntoUserResource(user client.User) (*v2.Resource, error) {
