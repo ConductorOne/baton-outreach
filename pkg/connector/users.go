@@ -160,7 +160,7 @@ func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error)
 
 func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	var userTraits []rs.UserTraitOption
-	userStatus := v2.UserTrait_Status_STATUS_DISABLED
+	var userStatus v2.UserTrait_Status_Status
 	primaryEmail := user.Attributes.Email
 
 	profile := map[string]interface{}{
@@ -172,11 +172,17 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 		"title":      user.Attributes.Title,
 	}
 
+	if user.Attributes.Locked {
+		userStatus = v2.UserTrait_Status_STATUS_DISABLED
+	} else {
+		userStatus = v2.UserTrait_Status_STATUS_ENABLED
+	}
+
 	userTraits = append(userTraits,
-		rs.WithUserProfile(profile),
-		rs.WithStatus(userStatus),
 		rs.WithEmail(primaryEmail, true),
 		rs.WithUserLogin(primaryEmail),
+		rs.WithStatus(userStatus),
+		rs.WithUserProfile(profile),
 	)
 
 	if user.Attributes.LastSignInAt != nil {

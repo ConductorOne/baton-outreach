@@ -120,7 +120,7 @@ func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 		return nil, err
 	}
 
-	if teamDetails.Relationships != nil || teamDetails.Relationships.Users != nil || teamDetails.Relationships.Users.Data != nil {
+	if teamDetails.Relationships != nil && teamDetails.Relationships.Users != nil && teamDetails.Relationships.Users.Data != nil {
 		teamMembers = *teamDetails.Relationships.Users.Data
 	}
 
@@ -138,7 +138,7 @@ func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 }
 
 func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
-	var teamMembers []client.DataDetailPair
+	var updatedTeamMembers []client.DataDetailPair
 
 	teamID := grant.Entitlement.Resource.Id.Resource
 	userID, err := strconv.Atoi(grant.Principal.Id.Resource)
@@ -155,16 +155,16 @@ func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 		return nil, fmt.Errorf("revoke tried on the team {%s} but no members were found", teamID)
 	}
 
-	teamMembers = *teamDetails.Relationships.Users.Data
+	teamMembers := *teamDetails.Relationships.Users.Data
 	for _, member := range teamMembers {
 		if member.Id == userID {
 			continue
 		}
 
-		teamMembers = append(teamMembers, member)
+		updatedTeamMembers = append(updatedTeamMembers, member)
 	}
 
-	err = b.client.UpdateTeamMembers(ctx, teamID, teamMembers)
+	err = b.client.UpdateTeamMembers(ctx, teamID, updatedTeamMembers)
 	if err != nil {
 		return nil, err
 	}
