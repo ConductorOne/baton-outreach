@@ -165,14 +165,14 @@ type RoleAttributes struct {
 type Role struct {
 	Attributes    RoleAttributes `json:"attributes"`
 	Id            int            `json:"id"`
-	Relationships struct {
-		ParentRole struct {
-			Data struct {
+	Relationships *struct {
+		ParentRole *struct {
+			Data *struct {
 				Id   int    `json:"id"`
 				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"parentRole"`
-	} `json:"relationships"`
+			} `json:"data,omitempty"`
+		} `json:"parentRole,omitempty"`
+	} `json:"relationships,omitempty"`
 	Type string `json:"type"`
 }
 

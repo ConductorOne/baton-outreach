@@ -2,6 +2,7 @@ package connector
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -60,6 +61,7 @@ func (b *roleBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.To
 }
 
 func parseIntoRoleResource(role client.Role) (*v2.Resource, error) {
+	var resourceOptions []rs.ResourceOption
 	profile := map[string]interface{}{
 		"name":       role.Attributes.Name,
 		"created_at": role.Attributes.CreatedAt,
@@ -70,11 +72,24 @@ func parseIntoRoleResource(role client.Role) (*v2.Resource, error) {
 		rs.WithRoleProfile(profile),
 	}
 
+	if role.Relationships != nil && role.Relationships.ParentRole != nil {
+		parentRoleData := role.Relationships.ParentRole
+		if parentRoleData != nil {
+			parentRoleID := &v2.ResourceId{
+				ResourceType: roleResourceType.Id,
+				Resource:     strconv.Itoa(role.Relationships.ParentRole.Data.Id),
+			}
+
+			resourceOptions = append(resourceOptions, rs.WithParentResourceID(parentRoleID))
+		}
+	}
+	
 	ret, err := rs.NewRoleResource(
 		role.Attributes.Name,
 		roleResourceType,
 		role.Id,
 		roleTraits,
+		resourceOptions...,
 	)
 	if err != nil {
 		return nil, err
