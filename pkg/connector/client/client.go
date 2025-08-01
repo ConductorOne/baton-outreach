@@ -158,6 +158,45 @@ func (c *OutreachClient) UpdateUserProfile(ctx context.Context, userID string, p
 	return nil
 }
 
+func (c *OutreachClient) DisableUser(ctx context.Context, userID string) error {
+	var requestBody struct {
+		Data UserLockStatusUpdate `json:"data"`
+	}
+
+	numericUserID, err := strconv.Atoi(userID)
+	if err != nil {
+		return err
+	}
+
+	requestBody.Data = UserLockStatusUpdate{
+		Id:   numericUserID,
+		Type: "user",
+		Attributes: struct {
+			Locked bool `json:"locked"`
+		}{
+			Locked: true,
+		},
+	}
+
+	userURL, err := url.JoinPath(baseURL, usersEP, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest(
+		ctx,
+		http.MethodPatch,
+		userURL,
+		nil,
+		requestBody,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *OutreachClient) CreateUser(ctx context.Context, newUserInfo NewUserBody) (*User, error) {
 	var response struct {
 		User *User `json:"data"`

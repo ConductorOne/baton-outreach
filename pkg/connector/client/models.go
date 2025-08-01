@@ -187,3 +187,11 @@ type NewUserAttributes struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 }
+
+type UserLockStatusUpdate struct {
+	Id         int    `json:"id"`
+	Type       string `json:"type"`
+	Attributes struct {
+		Locked bool `json:"locked"`
+	} `json:"attributes"`
+}

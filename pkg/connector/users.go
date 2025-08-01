@@ -158,6 +158,30 @@ func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error)
 	return newUserInfo, nil
 }
 
+func (b *userBuilder) Delete(ctx context.Context, principal *v2.ResourceId) (annotations.Annotations, error) {
+	userID := principal.Resource
+
+	err := b.client.DisableUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	disabledUser, err := b.client.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error when deleting user. Error: %w", err)
+	}
+
+	if isActive(*disabledUser) {
+		return nil, fmt.Errorf("error disabling user. User %s is not locked", userID)
+	}
+
+	return nil, nil
+}
+
+func isActive(user client.User) bool {
+	return !user.Attributes.Locked
+}
+
 func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	var userTraits []rs.UserTraitOption
 	var userStatus v2.UserTrait_Status_Status
