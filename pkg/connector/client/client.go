@@ -67,6 +67,30 @@ func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) 
 	return response.Results, nextLink, nil
 }
 
+func (c *OutreachClient) GetUserByID(ctx context.Context, userID string) (*User, error) {
+	var response struct {
+		User *User `json:"data"`
+	}
+
+	userURL, err := url.JoinPath(baseURL, usersEP, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.doRequest(
+		ctx,
+		http.MethodGet,
+		userURL,
+		&response,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.User, nil
+}
+
 func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) ([]*Team, string, error) {
 	var (
 		requestURL string

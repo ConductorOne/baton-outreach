@@ -84,71 +84,73 @@ type UserAttributes struct {
 	WeeklyDigestEmailEnabled             bool      `json:"weeklyDigestEmailEnabled"`
 }
 
+type UserRelationships struct {
+	Batches []struct {
+		Links struct {
+			Related string `json:"related"`
+		} `json:"links"`
+	} `json:"batches,omitempty"`
+	ContentCategories []struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"contentCategories,omitempty"`
+	Creator struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"creator,omitempty"`
+	Mailbox struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"mailbox,omitempty"`
+	Mailboxes []struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"mailboxes,omitempty"`
+	Profile struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"profile,omitempty"`
+	Recipients []struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"recipients,omitempty"`
+	Role *struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"role,omitempty"`
+	Teams []struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"teams,omitempty"`
+	Updater struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"updater,omitempty"`
+}
+
 type User struct {
-	Id            int            `json:"id"`
-	Attributes    UserAttributes `json:"attributes"`
-	Relationships struct {
-		Batches []struct {
-			Links struct {
-				Related string `json:"related"`
-			} `json:"links"`
-		} `json:"batches"`
-		ContentCategories []struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"contentCategories"`
-		Creator struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"creator"`
-		Mailbox struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"mailbox"`
-		Mailboxes []struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"mailboxes"`
-		Profile struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"profile"`
-		Recipients []struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"recipients"`
-		Role struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"role"`
-		Teams []struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"teams"`
-		Updater struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"updater"`
-	} `json:"relationships"`
-	Type string `json:"type"`
+	Id            int                `json:"id"`
+	Attributes    UserAttributes     `json:"attributes"`
+	Relationships *UserRelationships `json:"relationships,omitempty"`
+	Type          string             `json:"type"`
 }
 
 type UsersResponse struct {
@@ -162,18 +164,20 @@ type RoleAttributes struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+type RoleRelationships struct {
+	ParentRole *struct {
+		Data *struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data,omitempty"`
+	} `json:"parentRole,omitempty"`
+}
+
 type Role struct {
-	Attributes    RoleAttributes `json:"attributes"`
-	Id            int            `json:"id"`
-	Relationships *struct {
-		ParentRole *struct {
-			Data *struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data,omitempty"`
-		} `json:"parentRole,omitempty"`
-	} `json:"relationships,omitempty"`
-	Type string `json:"type"`
+	Attributes    RoleAttributes     `json:"attributes"`
+	Id            int                `json:"id"`
+	Relationships *RoleRelationships `json:"relationships,omitempty"`
+	Type          string             `json:"type"`
 }
 
 type RolesResponse struct {
@@ -190,41 +194,43 @@ type TeamAttributes struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
+type TeamRelationships struct {
+	Batches []struct {
+		Links struct {
+			Related string `json:"related"`
+		} `json:"links"`
+	} `json:"batches"`
+	ContentCategories []struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"contentCategories"`
+	Creator struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"creator"`
+	Updater struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"updater"`
+	Users []struct {
+		Data struct {
+			Id   int    `json:"id"`
+			Type string `json:"type"`
+		} `json:"data"`
+	} `json:"users,omitempty"`
+}
+
 type Team struct {
-	Attributes    TeamAttributes `json:"attributes"`
-	Id            int            `json:"id"`
-	Relationships *struct {
-		Batches []struct {
-			Links struct {
-				Related string `json:"related"`
-			} `json:"links"`
-		} `json:"batches"`
-		ContentCategories []struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"contentCategories"`
-		Creator struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"creator"`
-		Updater struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"updater"`
-		Users []struct {
-			Data struct {
-				Id   int    `json:"id"`
-				Type string `json:"type"`
-			} `json:"data"`
-		} `json:"users,omitempty"`
-	} `json:"relationships,omitempty"`
-	Type string `json:"type"`
+	Attributes    TeamAttributes     `json:"attributes"`
+	Id            int                `json:"id"`
+	Relationships *TeamRelationships `json:"relationships,omitempty"`
+	Type          string             `json:"type"`
 }
 
 type TeamsResponse struct {

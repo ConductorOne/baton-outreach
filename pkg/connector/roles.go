@@ -8,8 +8,11 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
+	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
+
+const rolePermissionName = "assigned"
 
 type roleBuilder struct {
 	client *client.OutreachClient
@@ -52,10 +55,21 @@ func (b *roleBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 	return roleResources, nextPageToken, nil, nil
 }
 
-func (b *roleBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
+func (b *roleBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+	var roleEntitlements []*v2.Entitlement
+
+	assigmentOptions := []entitlement.EntitlementOption{
+		entitlement.WithGrantableTo(userResourceType),
+		entitlement.WithDisplayName(resource.DisplayName),
+		entitlement.WithDescription(resource.DisplayName),
+	}
+
+	roleEntitlements = append(roleEntitlements, entitlement.NewPermissionEntitlement(resource, rolePermissionName, assigmentOptions...))
+
+	return roleEntitlements, "", nil, nil
 }
 
+// Grants function gets implemented on the users resource, since the users records have that data.
 func (b *roleBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	return nil, "", nil, nil
 }
@@ -83,7 +97,7 @@ func parseIntoRoleResource(role client.Role) (*v2.Resource, error) {
 			resourceOptions = append(resourceOptions, rs.WithParentResourceID(parentRoleID))
 		}
 	}
-	
+
 	ret, err := rs.NewRoleResource(
 		role.Attributes.Name,
 		roleResourceType,
