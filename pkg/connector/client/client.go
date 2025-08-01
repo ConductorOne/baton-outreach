@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -22,12 +23,31 @@ type OutreachClient struct {
 	TokenSource oauth2.TokenSource
 }
 
+type ErrorResponse struct {
+	Error       string `json:"error"`
+	Description string `json:"description"`
+}
+
+func (er *ErrorResponse) Message() string {
+	if er.Error == "" && er.Description == "" {
+		return "Error response empty"
+	}
+
+	return fmt.Sprintf("API error response: %s | Error description: %s", er.Error, er.Description)
+}
+
 // ConfigOption allows configuration of the client.
 type ConfigOption func(client *OutreachClient)
 
 func WithTokenSource(tokenSource oauth2.TokenSource) ConfigOption {
 	return func(client *OutreachClient) {
 		client.TokenSource = tokenSource
+	}
+}
+
+func WithAccessToken(accessToken string) ConfigOption {
+	return func(client *OutreachClient) {
+		client.TokenSource = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})
 	}
 }
 
@@ -196,8 +216,9 @@ func (c *OutreachClient) doRequest(
 	reqOpts ...ReqOpt,
 ) (http.Header, error) {
 	var (
-		resp *http.Response
-		err  error
+		resp        *http.Response
+		err         error
+		errResponse ErrorResponse
 	)
 
 	urlAddress, err := url.Parse(endpointUrl)
@@ -219,7 +240,7 @@ func (c *OutreachClient) doRequest(
 		token = accessToken.AccessToken
 	}
 
-	opts := []uhttp.RequestOption{uhttp.WithBearerToken(token), uhttp.WithAcceptJSONHeader(), uhttp.WithContentTypeJSONHeader()}
+	opts := []uhttp.RequestOption{uhttp.WithBearerToken(token)} //, uhttp.WithAcceptJSONHeader(), uhttp.WithContentTypeJSONHeader()}
 	if body != nil {
 		opts = append(opts, uhttp.WithJSONBody(body))
 	}
@@ -236,7 +257,7 @@ func (c *OutreachClient) doRequest(
 
 	switch method {
 	case http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch:
-		var doOptions []uhttp.DoOption
+		doOptions := []uhttp.DoOption{uhttp.WithErrorResponse(&errResponse)}
 		if res != nil {
 			doOptions = append(doOptions, uhttp.WithResponse(&res))
 		}

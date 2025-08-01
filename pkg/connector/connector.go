@@ -8,6 +8,7 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
+	"golang.org/x/oauth2"
 )
 
 type Connector struct {
@@ -44,6 +45,29 @@ func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error)
 }
 
 // New returns a new instance of the connector.
-func New(ctx context.Context) (*Connector, error) {
-	return &Connector{}, nil
+func New(ctx context.Context, accessToken string) (*Connector, error) {
+	c, err := client.New(ctx, client.WithAccessToken(accessToken))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Connector{
+		client: c,
+	}, nil
+}
+
+// NewWithTokenSource returns a new instance of the connector using a provided Token Source.
+func NewWithTokenSource(ctx context.Context, tokenSource oauth2.TokenSource) (*Connector, error) {
+	clientOptions := []client.ConfigOption{
+		client.WithTokenSource(tokenSource),
+	}
+
+	c, err := client.New(ctx, clientOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Connector{
+		client: c,
+	}, nil
 }

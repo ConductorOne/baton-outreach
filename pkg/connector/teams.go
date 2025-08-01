@@ -102,6 +102,15 @@ func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 	return grantResources, "", nil, nil
 }
 
+func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+
+	return nil, nil
+}
+
+func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	return nil, nil
+}
+
 func parseIntoTeamResource(team client.Team) (*v2.Resource, error) {
 	profile := map[string]interface{}{
 		"name":       team.Attributes.Name,

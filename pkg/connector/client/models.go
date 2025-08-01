@@ -1,6 +1,8 @@
 package client
 
-import "time"
+import (
+	"time"
+)
 
 type Pagination struct {
 	First string `json:"first,omitempty"`
