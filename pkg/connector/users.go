@@ -179,6 +179,10 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 		rs.WithUserLogin(primaryEmail),
 	)
 
+	if user.Attributes.LastSignInAt != nil {
+		userTraits = append(userTraits, rs.WithLastLogin(*user.Attributes.LastSignInAt))
+	}
+
 	ret, err := rs.NewUserResource(
 		user.Attributes.Name,
 		userResourceType,
