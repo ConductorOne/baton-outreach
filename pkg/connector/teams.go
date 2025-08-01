@@ -72,7 +72,7 @@ func parseIntoTeamResource(team client.Team) (*v2.Resource, error) {
 
 	ret, err := rs.NewGroupResource(
 		team.Attributes.Name,
-		userResourceType,
+		teamResourceType,
 		team.Id,
 		groupTraits,
 	)
