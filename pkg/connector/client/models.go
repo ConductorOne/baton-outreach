@@ -72,7 +72,7 @@ type UserAttributes struct {
 	Title                                string     `json:"title"`
 	UnknownReplyEmailEnabled             bool       `json:"unknownReplyEmailEnabled"`
 	UpdatedAt                            time.Time  `json:"updatedAt"`
-	UserGuid                             string     `json:"userGuid"`
+	UserGUID                             string     `json:"userGuid"`
 	Username                             string     `json:"username"`
 	UsersViewId                          int        `json:"usersViewId"`
 	VoicemailNotificationEnabled         bool       `json:"voicemailNotificationEnabled"`

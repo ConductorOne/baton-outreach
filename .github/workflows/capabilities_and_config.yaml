@@ -25,7 +25,7 @@ jobs:
         run: go build -o connector ./cmd/baton-outreach
 
       - name: Run and save config output
-        run: ./connector config > config_schema.json
+        run: ./connector --access-token "ACCESS_TOKEN" config > config_schema.json
 
       - name: Run and save capabilities output
         run: ./connector capabilities > baton_capabilities.json

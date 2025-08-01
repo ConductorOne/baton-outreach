@@ -164,7 +164,7 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	primaryEmail := user.Attributes.Email
 
 	profile := map[string]interface{}{
-		"user_guid":  user.Attributes.UserGuid,
+		"user_guid":  user.Attributes.UserGUID,
 		"first_name": user.Attributes.FirstName,
 		"last_name":  user.Attributes.LastName,
 		"email":      primaryEmail,

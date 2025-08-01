@@ -155,6 +155,7 @@ func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 		return nil, fmt.Errorf("revoke tried on the team {%s} but no members were found", teamID)
 	}
 
+	teamMembers = *teamDetails.Relationships.Users.Data
 	for _, member := range teamMembers {
 		if member.Id == userID {
 			continue
