@@ -2,7 +2,6 @@ package connector
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -91,7 +90,7 @@ func parseIntoRoleResource(role client.Role) (*v2.Resource, error) {
 		if parentRoleData != nil {
 			parentRoleID := &v2.ResourceId{
 				ResourceType: roleResourceType.Id,
-				Resource:     strconv.Itoa(role.Relationships.ParentRole.Data.Id),
+				Resource:     "", //role.Relationships.ParentRole.Data.Id,
 			}
 
 			resourceOptions = append(resourceOptions, rs.WithParentResourceID(parentRoleID))

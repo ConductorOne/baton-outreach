@@ -11,24 +11,17 @@ type Pagination struct {
 }
 
 type UserAttributes struct {
-	AccountsViewId                int       `json:"accountsViewId"`
-	ActivityNotificationsDisabled bool      `json:"activityNotificationsDisabled"`
-	BounceWarningEmailEnabled     bool      `json:"bounceWarningEmailEnabled"`
-	BridgePhone                   string    `json:"bridgePhone"`
-	BridgePhoneExtension          string    `json:"bridgePhoneExtension"`
-	CallsViewId                   int       `json:"callsViewId"`
-	ControlledTabDefault          string    `json:"controlledTabDefault"`
-	CreatedAt                     time.Time `json:"createdAt"`
-	CurrentSignInAt               time.Time `json:"currentSignInAt"`
-	//Custom1                       string    `json:"custom1"`
-	//Custom2                       string    `json:"custom2"`
-	//Custom3                       string    `json:"custom3"`
-	//Custom4                       string    `json:"custom4"`
-	//Custom5                       string    `json:"custom5"`
-	DailyDigestEmailEnabled bool `json:"dailyDigestEmailEnabled"`
-	DefaultRulesetId        int  `json:"defaultRulesetId"`
-	Duties                  struct {
-	} `json:"duties"`
+	AccountsViewId                       int       `json:"accountsViewId"`
+	ActivityNotificationsDisabled        bool      `json:"activityNotificationsDisabled"`
+	BounceWarningEmailEnabled            bool      `json:"bounceWarningEmailEnabled"`
+	BridgePhone                          string    `json:"bridgePhone"`
+	BridgePhoneExtension                 string    `json:"bridgePhoneExtension"`
+	CallsViewId                          int       `json:"callsViewId"`
+	ControlledTabDefault                 string    `json:"controlledTabDefault"`
+	CreatedAt                            time.Time `json:"createdAt"`
+	CurrentSignInAt                      time.Time `json:"currentSignInAt"`
+	DailyDigestEmailEnabled              bool      `json:"dailyDigestEmailEnabled"`
+	DefaultRulesetId                     int       `json:"defaultRulesetId"`
 	Email                                string    `json:"email"`
 	EnableVoiceRecordings                bool      `json:"enableVoiceRecordings"`
 	EngagementEmailsEnabled              bool      `json:"engagementEmailsEnabled"`
@@ -87,65 +80,12 @@ type UserAttributes struct {
 }
 
 type UserRelationships struct {
-	Batches []struct {
-		Links struct {
-			Related string `json:"related"`
-		} `json:"links"`
-	} `json:"batches,omitempty"`
-	ContentCategories []struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"contentCategories,omitempty"`
-	Creator struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"creator,omitempty"`
-	Mailbox struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"mailbox,omitempty"`
-	Mailboxes []struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"mailboxes,omitempty"`
-	Profile struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"profile,omitempty"`
-	Recipients []struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"recipients,omitempty"`
 	Role *struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
+		Data *DataDetailPair `json:"data,omitempty"`
 	} `json:"role,omitempty"`
-	Teams []struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
+	Teams *struct {
+		Data *[]DataDetailPair `json:"data,omitempty"`
 	} `json:"teams,omitempty"`
-	Updater struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"updater,omitempty"`
 }
 
 type User struct {
@@ -168,10 +108,7 @@ type RoleAttributes struct {
 
 type RoleRelationships struct {
 	ParentRole *struct {
-		Data *struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data,omitempty"`
+		Data *DataDetailPair `json:"data,omitempty"`
 	} `json:"parentRole,omitempty"`
 }
 
@@ -188,43 +125,17 @@ type RolesResponse struct {
 }
 
 type TeamAttributes struct {
-	Color          string    `json:"color"`
-	CreatedAt      time.Time `json:"createdAt"`
-	Name           string    `json:"name"`
-	ScimExternalId string    `json:"scimExternalId"`
-	ScimSource     string    `json:"scimSource"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+	Color          string `json:"color"`
+	CreatedAt      string `json:"createdAt"`
+	Name           string `json:"name"`
+	ScimExternalId string `json:"scimExternalId"`
+	ScimSource     string `json:"scimSource"`
+	UpdatedAt      string `json:"updatedAt"`
 }
 
 type TeamRelationships struct {
-	Batches []struct {
-		Links struct {
-			Related string `json:"related"`
-		} `json:"links"`
-	} `json:"batches"`
-	ContentCategories []struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"contentCategories"`
-	Creator struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"creator"`
-	Updater struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
-	} `json:"updater"`
-	Users []struct {
-		Data struct {
-			Id   int    `json:"id"`
-			Type string `json:"type"`
-		} `json:"data"`
+	Users *struct {
+		Data *[]DataDetailPair `json:"data,omitempty"`
 	} `json:"users,omitempty"`
 }
 
@@ -238,4 +149,33 @@ type Team struct {
 type TeamsResponse struct {
 	Links   *Pagination `json:"links,omitempty"`
 	Results []*Team     `json:"data"`
+}
+
+type UpdateTeamMembersBody struct {
+	Team struct {
+		Id            string `json:"id"`
+		Type          string `json:"type"` // Type should always be 'team'.
+		Relationships struct {
+			Users struct {
+				Data []DataDetailPair `json:"data"`
+			} `json:"users"`
+		} `json:"relationships"`
+	} `json:"data"`
+}
+
+type UpdateTeamBody struct {
+	Id            string                  `json:"id"`
+	Type          string                  `json:"type"` // Type should always be 'team'.
+	Relationships UpdateTeamRelationships `json:"relationships"`
+}
+
+type UpdateTeamRelationships struct {
+	Users struct {
+		Data []DataDetailPair `json:"data"`
+	} `json:"users"`
+}
+
+type DataDetailPair struct {
+	Id   int    `json:"id"`
+	Type string `json:"type"`
 }

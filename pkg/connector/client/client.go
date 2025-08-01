@@ -207,6 +207,42 @@ func (c *OutreachClient) ListAllRoles(ctx context.Context, nextPageLink string) 
 	return response.Results, nextLink, nil
 }
 
+func (c *OutreachClient) UpdateTeamMembers(ctx context.Context, teamID string, teamMembers []DataDetailPair) error {
+	var requestBody struct {
+		Data UpdateTeamBody `json:"data"`
+	}
+
+	requestBody.Data = UpdateTeamBody{
+		Id:   teamID,
+		Type: "team",
+		Relationships: UpdateTeamRelationships{
+			Users: struct {
+				Data []DataDetailPair `json:"data"`
+			}{
+				Data: teamMembers,
+			},
+		},
+	}
+
+	teamURL, err := url.JoinPath(baseURL, teamsEP, teamID)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.doRequest(
+		ctx,
+		http.MethodPatch,
+		teamURL,
+		nil,
+		requestBody,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *OutreachClient) doRequest(
 	ctx context.Context,
 	method string,
@@ -242,7 +278,7 @@ func (c *OutreachClient) doRequest(
 
 	opts := []uhttp.RequestOption{uhttp.WithBearerToken(token)} //, uhttp.WithAcceptJSONHeader(), uhttp.WithContentTypeJSONHeader()}
 	if body != nil {
-		opts = append(opts, uhttp.WithJSONBody(body))
+		opts = append(opts, uhttp.WithJSONBody(body), uhttp.WithContentType("application/vnd.api+json"))
 	}
 
 	req, err := c.client.NewRequest(

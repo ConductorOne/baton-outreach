@@ -12,6 +12,7 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 )
 
 const teamPermissionName = "member"
@@ -76,6 +77,8 @@ func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *
 
 func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	var grantResources []*v2.Grant
+	logger := ctxzap.Extract(ctx)
+
 	teamID := resource.Id.Resource
 
 	teamDetails, err := b.client.GetTeamByID(ctx, teamID)
@@ -83,16 +86,17 @@ func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 		return nil, "", nil, err
 	}
 
-	if teamDetails.Relationships == nil || teamDetails.Relationships.Users == nil {
-		return nil, "", nil, fmt.Errorf("the team {%s} does not have any members", teamID)
+	if teamDetails.Relationships == nil || teamDetails.Relationships.Users == nil || teamDetails.Relationships.Users.Data == nil {
+		logger.Warn(fmt.Sprintf("the team {%s} does not have any members", teamID))
+		return nil, "", nil, nil
 	}
 
-	teamMembers := teamDetails.Relationships.Users
+	teamMembers := *teamDetails.Relationships.Users.Data
 	for _, member := range teamMembers {
 		userResource := &v2.Resource{
 			Id: &v2.ResourceId{
 				ResourceType: userResourceType.Id,
-				Resource:     strconv.Itoa(member.Data.Id),
+				Resource:     strconv.Itoa(member.Id),
 			},
 		}
 
@@ -103,11 +107,67 @@ func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 }
 
 func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+	var teamMembers []client.DataDetailPair
+
+	teamID := entitlement.Resource.Id.Resource
+	userID, err := strconv.Atoi(principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	teamDetails, err := b.client.GetTeamByID(ctx, teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	if teamDetails.Relationships != nil || teamDetails.Relationships.Users != nil || teamDetails.Relationships.Users.Data != nil {
+		teamMembers = *teamDetails.Relationships.Users.Data
+	}
+
+	teamMembers = append(teamMembers, client.DataDetailPair{
+		Id:   userID,
+		Type: "user",
+	})
+
+	err = b.client.UpdateTeamMembers(ctx, teamID, teamMembers)
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }
 
 func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	var teamMembers []client.DataDetailPair
+
+	teamID := grant.Entitlement.Resource.Id.Resource
+	userID, err := strconv.Atoi(grant.Principal.Id.Resource)
+	if err != nil {
+		return nil, err
+	}
+
+	teamDetails, err := b.client.GetTeamByID(ctx, teamID)
+	if err != nil {
+		return nil, err
+	}
+
+	if teamDetails.Relationships == nil || teamDetails.Relationships.Users == nil || teamDetails.Relationships.Users.Data == nil {
+		return nil, fmt.Errorf("revoke tried on the team {%s} but no members were found", teamID)
+	}
+
+	for _, member := range teamMembers {
+		if member.Id == userID {
+			continue
+		}
+
+		teamMembers = append(teamMembers, member)
+	}
+
+	err = b.client.UpdateTeamMembers(ctx, teamID, teamMembers)
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 

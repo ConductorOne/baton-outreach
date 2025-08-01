@@ -20,7 +20,7 @@ func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.Resour
 	return []connectorbuilder.ResourceSyncer{
 		newUserBuilder(d.client),
 		newTeamBuilder(d.client),
-		newRoleBuilder(d.client),
+		//newRoleBuilder(d.client),
 	}
 }
 
