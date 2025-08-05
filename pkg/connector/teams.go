@@ -26,23 +26,29 @@ func (b *teamBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 }
 
 func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
-	var teamResources []*v2.Resource
-	var nextPageToken string
+	var (
+		teamResources []*v2.Resource
+		nextPageToken string
+	)
+	outAnnotations := annotations.Annotations{}
 
 	bag, nextPage, err := client.GetToken(pToken.Token, &v2.ResourceId{ResourceType: teamResourceType.Id})
 	if err != nil {
 		return nil, "", nil, err
 	}
 
-	teams, nextPageLink, err := b.client.ListAllTeams(ctx, nextPage)
+	teams, nextPageLink, rateLimitData, err := b.client.ListAllTeams(ctx, nextPage)
 	if err != nil {
-		return nil, "", nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return nil, "", outAnnotations, err
 	}
 
 	for _, team := range teams {
 		teamResource, err := parseIntoTeamResource(*team)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, "", outAnnotations, err
 		}
 
 		teamResources = append(teamResources, teamResource)
@@ -55,7 +61,7 @@ func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		}
 	}
 
-	return teamResources, nextPageToken, nil, nil
+	return teamResources, nextPageToken, outAnnotations, nil
 }
 
 func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
@@ -77,18 +83,22 @@ func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *
 
 func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	var grantResources []*v2.Grant
+	outAnnotations := annotations.Annotations{}
 	logger := ctxzap.Extract(ctx)
 
 	teamID := resource.Id.Resource
 
-	teamDetails, err := b.client.GetTeamByID(ctx, teamID)
+	teamDetails, rateLimitData, err := b.client.GetTeamByID(ctx, teamID)
 	if err != nil {
-		return nil, "", nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return nil, "", outAnnotations, err
 	}
 
 	if teamDetails.Relationships == nil || teamDetails.Relationships.Users == nil || teamDetails.Relationships.Users.Data == nil {
 		logger.Warn(fmt.Sprintf("the team {%s} does not have any members", teamID))
-		return nil, "", nil, nil
+		return nil, "", outAnnotations, nil
 	}
 
 	teamMembers := *teamDetails.Relationships.Users.Data
@@ -103,11 +113,12 @@ func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 		grantResources = append(grantResources, grant.NewGrant(resource, teamPermissionName, userResource))
 	}
 
-	return grantResources, "", nil, nil
+	return grantResources, "", outAnnotations, nil
 }
 
 func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
 	var teamMembers []client.DataDetailPair
+	outAnnotations := annotations.Annotations{}
 
 	teamID := entitlement.Resource.Id.Resource
 	userID, err := strconv.Atoi(principal.Id.Resource)
@@ -115,9 +126,12 @@ func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 		return nil, err
 	}
 
-	teamDetails, err := b.client.GetTeamByID(ctx, teamID)
+	teamDetails, rateLimitData, err := b.client.GetTeamByID(ctx, teamID)
 	if err != nil {
-		return nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, err
 	}
 
 	if teamDetails.Relationships != nil && teamDetails.Relationships.Users != nil && teamDetails.Relationships.Users.Data != nil {
@@ -129,16 +143,20 @@ func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 		Type: "user",
 	})
 
-	err = b.client.UpdateTeamMembers(ctx, teamID, teamMembers)
+	rateLimitData, err = b.client.UpdateTeamMembers(ctx, teamID, teamMembers)
 	if err != nil {
-		return nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, err
 	}
 
-	return nil, nil
+	return outAnnotations, nil
 }
 
 func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
-	var updatedTeamMembers []client.DataDetailPair
+	outAnnotations := annotations.Annotations{}
+	updatedTeamMembers := make([]client.DataDetailPair, 0)
 
 	teamID := grant.Entitlement.Resource.Id.Resource
 	userID, err := strconv.Atoi(grant.Principal.Id.Resource)
@@ -146,9 +164,12 @@ func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 		return nil, err
 	}
 
-	teamDetails, err := b.client.GetTeamByID(ctx, teamID)
+	teamDetails, rateLimitData, err := b.client.GetTeamByID(ctx, teamID)
 	if err != nil {
-		return nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, err
 	}
 
 	if teamDetails.Relationships == nil || teamDetails.Relationships.Users == nil || teamDetails.Relationships.Users.Data == nil {
@@ -164,12 +185,15 @@ func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 		updatedTeamMembers = append(updatedTeamMembers, member)
 	}
 
-	err = b.client.UpdateTeamMembers(ctx, teamID, updatedTeamMembers)
+	rateLimitData, err = b.client.UpdateTeamMembers(ctx, teamID, updatedTeamMembers)
 	if err != nil {
-		return nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, err
 	}
 
-	return nil, nil
+	return outAnnotations, nil
 }
 
 func parseIntoTeamResource(team client.Team) (*v2.Resource, error) {

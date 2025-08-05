@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/conductorone/baton-sdk/pkg/annotations"
+
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
-	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
@@ -23,23 +24,29 @@ func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 }
 
 func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
-	var userResources []*v2.Resource
-	var nextPageToken string
+	var (
+		userResources []*v2.Resource
+		nextPageToken string
+	)
+	outAnnotations := annotations.Annotations{}
 
 	bag, nextPage, err := client.GetToken(pToken.Token, &v2.ResourceId{ResourceType: userResourceType.Id})
 	if err != nil {
 		return nil, "", nil, err
 	}
 
-	users, nextPageLink, err := b.client.ListAllUsers(ctx, nextPage)
+	users, nextPageLink, rateLimitData, err := b.client.ListAllUsers(ctx, nextPage)
 	if err != nil {
-		return nil, "", nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return nil, "", outAnnotations, err
 	}
 
 	for _, user := range users {
 		userResource, err := parseIntoUserResource(*user)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, "", outAnnotations, err
 		}
 
 		userResources = append(userResources, userResource)
@@ -48,11 +55,11 @@ func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 	if nextPageLink != "" {
 		nextPageToken, err = bag.NextToken(nextPageLink)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, "", outAnnotations, err
 		}
 	}
 
-	return userResources, nextPageToken, nil, nil
+	return userResources, nextPageToken, outAnnotations, nil
 }
 
 // Entitlements always returns an empty slice for users.
@@ -63,11 +70,17 @@ func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *paginat
 // Grants implements the Grants function for profiles resource.
 func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
 	var grantResources []*v2.Grant
+	outAnnotations := annotations.Annotations{}
+
 	userID := resource.Id.Resource
 
-	user, err := b.client.GetUserByID(ctx, userID)
+	user, rateLimitData, err := b.client.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, "", nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+
+		return nil, "", outAnnotations, err
 	}
 
 	if user.Relationships == nil || user.Relationships.Profile == nil {
@@ -84,7 +97,7 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 
 	grantResources = append(grantResources, grant.NewGrant(profileResource, profilePermissionName, resource))
 
-	return grantResources, "", nil, nil
+	return grantResources, "", outAnnotations, nil
 }
 
 func (b *userBuilder) CreateAccountCapabilityDetails(_ context.Context) (*v2.CredentialDetailsAccountProvisioning, annotations.Annotations, error) {
@@ -101,26 +114,31 @@ func (b *userBuilder) CreateAccount(
 	accountInfo *v2.AccountInfo,
 	_ *v2.CredentialOptions,
 ) (connectorbuilder.CreateAccountResponse, []*v2.PlaintextData, annotations.Annotations, error) {
+	outAnnotations := annotations.Annotations{}
+
 	newUserInfo, err := createNewUserInfo(accountInfo)
 	if err != nil {
 		return nil, nil, annotations.Annotations{}, err
 	}
 
-	newUser, err := b.client.CreateUser(ctx, *newUserInfo)
+	newUser, rateLimitData, err := b.client.CreateUser(ctx, *newUserInfo)
 	if err != nil {
-		return nil, nil, annotations.Annotations{}, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return nil, nil, outAnnotations, err
 	}
 
 	userResource, err := parseIntoUserResource(*newUser)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, outAnnotations, err
 	}
 
 	caResponse := &v2.CreateAccountResponse_SuccessResult{
 		Resource: userResource,
 	}
 
-	return caResponse, nil, nil, nil
+	return caResponse, nil, outAnnotations, nil
 }
 
 func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error) {
@@ -159,23 +177,31 @@ func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error)
 }
 
 func (b *userBuilder) Delete(ctx context.Context, principal *v2.ResourceId) (annotations.Annotations, error) {
+	outAnnotations := annotations.Annotations{}
+
 	userID := principal.Resource
 
-	err := b.client.DisableUser(ctx, userID)
+	rateLimitData, err := b.client.DisableUser(ctx, userID)
 	if err != nil {
-		return nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, err
 	}
 
-	disabledUser, err := b.client.GetUserByID(ctx, userID)
+	disabledUser, rateLimitData, err := b.client.GetUserByID(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("error when deleting user. Error: %w", err)
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, fmt.Errorf("error when deleting user. Error: %w", err)
 	}
 
 	if isActive(*disabledUser) {
-		return nil, fmt.Errorf("error disabling user. User %s is not locked", userID)
+		return outAnnotations, fmt.Errorf("error disabling user. User %s is not locked", userID)
 	}
 
-	return nil, nil
+	return outAnnotations, nil
 }
 
 func isActive(user client.User) bool {
@@ -205,8 +231,8 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	userTraits = append(userTraits,
 		rs.WithEmail(primaryEmail, true),
 		rs.WithUserLogin(primaryEmail),
-		rs.WithStatus(userStatus),
 		rs.WithUserProfile(profile),
+		rs.WithStatus(userStatus),
 	)
 
 	if user.Attributes.LastSignInAt != nil {

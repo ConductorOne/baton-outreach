@@ -24,23 +24,29 @@ func (b *profileBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 }
 
 func (b *profileBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
-	var profileResources []*v2.Resource
-	var nextPageToken string
+	var (
+		profileResources []*v2.Resource
+		nextPageToken    string
+	)
+	outAnnotations := annotations.Annotations{}
 
 	bag, nextPage, err := client.GetToken(pToken.Token, &v2.ResourceId{ResourceType: profileResourceType.Id})
 	if err != nil {
 		return nil, "", nil, err
 	}
 
-	profiles, nextPageLink, err := b.client.ListAllProfiles(ctx, nextPage)
+	profiles, nextPageLink, rateLimitData, err := b.client.ListAllProfiles(ctx, nextPage)
 	if err != nil {
-		return nil, "", nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return nil, "", outAnnotations, err
 	}
 
 	for _, profile := range profiles {
 		profileResource, err := parseIntoProfileResource(*profile)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, "", outAnnotations, err
 		}
 
 		profileResources = append(profileResources, profileResource)
@@ -49,11 +55,11 @@ func (b *profileBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pag
 	if nextPageLink != "" {
 		nextPageToken, err = bag.NextToken(nextPageLink)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, "", outAnnotations, err
 		}
 	}
 
-	return profileResources, nextPageToken, nil, nil
+	return profileResources, nextPageToken, outAnnotations, nil
 }
 
 func (b *profileBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
@@ -76,30 +82,38 @@ func (b *profileBuilder) Grants(_ context.Context, _ *v2.Resource, _ *pagination
 }
 
 func (b *profileBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
+	outAnnotations := annotations.Annotations{}
 	profileID, err := strconv.Atoi(entitlement.Resource.Id.Resource)
 	if err != nil {
-		return nil, err
+		return outAnnotations, err
 	}
 	userID := principal.Id.Resource
 
-	err = b.client.UpdateUserProfile(ctx, userID, profileID)
+	rateLimitData, err := b.client.UpdateUserProfile(ctx, userID, profileID)
 	if err != nil {
-		return nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, err
 	}
 
-	return nil, nil
+	return outAnnotations, nil
 }
 
 func (b *profileBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.Annotations, error) {
+	outAnnotations := annotations.Annotations{}
 	profileID := defaultProfileID
 	userID := grant.Principal.Id.Resource
 
-	err := b.client.UpdateUserProfile(ctx, userID, profileID)
+	rateLimitData, err := b.client.UpdateUserProfile(ctx, userID, profileID)
 	if err != nil {
-		return nil, err
+		if rateLimitData != nil {
+			outAnnotations.WithRateLimiting(rateLimitData)
+		}
+		return outAnnotations, err
 	}
 
-	return nil, nil
+	return outAnnotations, nil
 }
 
 func parseIntoProfileResource(prof client.Profile) (*v2.Resource, error) {
