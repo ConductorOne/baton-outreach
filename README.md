@@ -2,7 +2,7 @@
 
 # `baton-outreach` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-outreach.svg)](https://pkg.go.dev/github.com/conductorone/baton-outreach) ![main ci](https://github.com/conductorone/baton-outreach/actions/workflows/main.yaml/badge.svg)
 
-`baton-outreach` is a connector for built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
+`baton-outreach` is a connector for [Outreach](https://www.outreach.io/) built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
 
 Check out [Baton](https://github.com/conductorone/baton) to learn more the project in general.
 
@@ -41,8 +41,10 @@ baton resources
 
 `baton-outreach` will pull down information about the following resources:
 - Users
+- Profiles
+- Teams
 
-`baton-outreach` does not specify supporting account provisioning or entitlement provisioning.
+`baton-outreach` supports account provisioning and entitlement provisioning for Teams and Profiles.
 
 # Contributing, Support and Issues
 
