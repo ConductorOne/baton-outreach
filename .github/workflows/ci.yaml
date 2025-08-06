@@ -39,24 +39,14 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    # Define any services needed for the test suite (or delete this section)
-    # services:
-    #   postgres:
-    #     image: postgres:16
-    #     ports:
-    #       - "5432:5432"
-    #     env:
-    #       POSTGRES_PASSWORD: secretpassword
     env:
       BATON_LOG_LEVEL: debug
-      # Add any environment variables needed to run baton-outreach
-      # BATON_BASE_URL: 'http://localhost:8080'
-      # BATON_ACCESS_TOKEN: 'secret_token'
-      # The following parameters are passed to grant/revoke commands
-      # Change these to the correct IDs for your test data
-      CONNECTOR_GRANT: 'grant:entitlement:group:1234:member:user:9876'
-      CONNECTOR_ENTITLEMENT: 'entitlement:group:1234:member'
-      CONNECTOR_PRINCIPAL: 'user:9876'
+      OUTREACH_ACCESS_TOKEN: ${{ secrets.OUTREACH_ACCESS_TOKEN }}
+      CONNECTOR_PROFILE_GRANT: 'profile:41:assigned:user:3'
+      CONNECTOR_PROFILE_ENTITLEMENT: 'profile:41:assigned'
+      CONNECTOR_TEAM_GRANT: 'team:1:member:user:3'
+      CONNECTOR_TEAM_ENTITLEMENT: 'team:1:member'
+      CONNECTOR_PRINCIPAL: '3'
       CONNECTOR_PRINCIPAL_TYPE: 'user'
     steps:
       - name: Install Go
@@ -65,40 +55,42 @@ jobs:
           go-version: 1.22.x
       - name: Checkout code
         uses: actions/checkout@v4
-      # Install any dependencies here (or delete this)
-      # - name: Install postgres client
-      #   run: sudo apt install postgresql-client
-      # Run any fixture setup here (or delete this)
-      # - name: Import sql into postgres
-      #   run: psql -h localhost --user postgres -f environment.sql
-      #   env:
-      #     PGPASSWORD: secretpassword
       - name: Build baton-outreach
         run: go build ./cmd/baton-outreach
       - name: Run baton-outreach
-        run: ./baton-outreach
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }}
 
       - name: Install baton
         run: ./scripts/get-baton.sh && mv baton /usr/local/bin
 
-      - name: Check for grant before revoking
+        # PROFILES GRANT-REVOKE TESTS
+      - name: Check for profile grant before revoking
+        run: baton grants --entitlement="${{ env.CONNECTOR_PROFILE_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
 
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
+      - name: Revoke profile grant
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} --revoke-grant="${{ env.CONNECTOR_PROFILE_GRANT }}"
 
+      - name: Check profile grant was revoked
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} && baton grants --entitlement="${{ env.CONNECTOR_PROFILE_ENTITLEMENT }}" --output-format=json | jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
 
-      - name: Revoke grants
-        run: ./baton-outreach --revoke-grant="${{ env.CONNECTOR_GRANT }}"
-
-      - name: Check grant was revoked
-        run: ./baton-outreach && baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
-
-      - name: Grant entitlement
-        # Change the grant arguments to the correct IDs for your test data
-        run: ./baton-outreach --grant-entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
+      - name: Grant profile entitlement
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} --grant-entitlement="${{ env.CONNECTOR_PROFILE_ENTITLEMENT }}" --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
 
       - name: Check grant was re-granted
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} && baton grants --entitlement="${{ env.CONNECTOR_PROFILE_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
 
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
+      # TEAMS GRANT-REVOKE TESTS
+      - name: Check for team grant before revoking
+        run: baton grants --entitlement="${{ env.CONNECTOR_TEAM_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
 
+      - name: Revoke team grant
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} --revoke-grant="${{ env.CONNECTOR_TEAM_GRANT }}"
+
+      - name: Check team grant was revoked
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} && baton grants --entitlement="${{ env.CONNECTOR_TEAM_ENTITLEMENT }}" --output-format=json | jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
+
+      - name: Grant team entitlement
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} --grant-entitlement="${{ env.CONNECTOR_TEAM_ENTITLEMENT }}" --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
+
+      - name: Check grant was re-granted
+        run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} && baton grants --entitlement="${{ env.CONNECTOR_TEAM_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""

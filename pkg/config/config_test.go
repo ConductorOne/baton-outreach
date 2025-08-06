@@ -14,16 +14,16 @@ func TestValidateConfig(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "valid config",
+			name: "valid config",
 			config: &Outreach{
-				// TODO: Add minimal valid configuration here once Config type is generated
+				AccessToken: "abc123",
 			},
 			wantErr: false,
 		},
 		{
-			name:   "invalid config - missing required fields",
+			name: "invalid config - missing required fields",
 			config: &Outreach{
-				// TODO: Add configuration with missing required fields once Config type is generated
+				AccessToken: "",
 			},
 			wantErr: true,
 		},
