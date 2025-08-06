@@ -6,6 +6,7 @@ import (
 
 var (
 	accessTokenField = field.StringField("access-token",
+		field.WithDisplayName("Access Token"),
 		field.WithDescription("Generated access token to communicate with Outreach API."),
 		field.WithRequired(false),
 		field.WithIsSecret(true),
@@ -24,4 +25,6 @@ var Config = field.NewConfiguration(
 	ConfigurationFields,
 	field.WithConstraints(FieldRelationships...),
 	field.WithConnectorDisplayName("Outreach"),
+	field.WithHelpUrl("/docs/baton/outreach"),
+	field.WithIconUrl("/static/app-icons/outreach.svg"),
 )

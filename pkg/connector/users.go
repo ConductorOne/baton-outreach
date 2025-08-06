@@ -83,8 +83,8 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 		return nil, "", outAnnotations, err
 	}
 
-	if user.Relationships == nil || user.Relationships.Profile == nil {
-		return nil, "", nil, fmt.Errorf("user {%s} profile is missing", userID)
+	if user.Relationships == nil || user.Relationships.Profile == nil || user.Relationships.Profile.Data == nil {
+		return nil, "", outAnnotations, fmt.Errorf("user {%s} profile is missing", userID)
 	}
 
 	userProfile := user.Relationships.Profile
