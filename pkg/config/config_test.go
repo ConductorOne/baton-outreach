@@ -1,11 +1,14 @@
 package config
 
 import (
+	"os"
 	"testing"
 
 	"github.com/conductorone/baton-sdk/pkg/field"
 	"github.com/stretchr/testify/assert"
 )
+
+var accessToken = os.Getenv("OUTREACH_ACCESS_TOKEN")
 
 func TestValidateConfig(t *testing.T) {
 	tests := []struct {
@@ -16,7 +19,7 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "valid config",
 			config: &Outreach{
-				AccessToken: "abc123",
+				AccessToken: accessToken,
 			},
 			wantErr: false,
 		},
