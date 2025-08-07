@@ -51,6 +51,7 @@ var (
 	// marked as mutually exclusive from the username password pair.
 	FieldRelationships = []field.SchemaFieldRelationship{
 		field.FieldsAtLeastOneUsed(accessTokenField, refreshToken),
+		field.FieldsMutuallyExclusive(accessTokenField, refreshToken),
 		field.FieldsRequiredTogether(outreachClientSecretField, outreachClientIDField, refreshToken)}
 )
 
