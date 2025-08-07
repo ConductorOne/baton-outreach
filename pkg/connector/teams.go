@@ -57,7 +57,7 @@ func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 	if nextPageLink != "" {
 		nextPageToken, err = bag.NextToken(nextPageLink)
 		if err != nil {
-			return nil, "", nil, err
+			return nil, "", outAnnotations, err
 		}
 	}
 

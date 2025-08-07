@@ -12,6 +12,8 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type userBuilder struct {
@@ -83,7 +85,7 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 	}
 
 	if user.Relationships == nil || user.Relationships.Profile == nil || user.Relationships.Profile.Data == nil {
-		return nil, "", outAnnotations, fmt.Errorf("user {%s} profile is missing", userID)
+		return nil, "", outAnnotations, status.Errorf(codes.NotFound, "user {%s} profile is missing", userID)
 	}
 
 	userProfile := user.Relationships.Profile
