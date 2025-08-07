@@ -114,4 +114,4 @@ jobs:
       - name: Build baton-outreach
         run: go build ./cmd/baton-outreach
       - name: Run baton-outreach
-        run: ./baton-outreach --outreach-client-id='${{env.OUTREACH_CLIENT_ID}}' --outreach-client-secret='${{env.OUTREACH_CLIENT_SECRET}}' --refresh_token='${{env.OUTREACH_REFRESH_TOKEN}}'
+        run: ./baton-outreach --outreach-client-id='${{env.OUTREACH_CLIENT_ID}}' --outreach-client-secret='${{env.OUTREACH_CLIENT_SECRET}}' --refresh-token='${{env.OUTREACH_REFRESH_TOKEN}}'
