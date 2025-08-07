@@ -7,18 +7,18 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.24.x
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Run linters
-        uses: golangci/golangci-lint-action@v5
+        uses: golangci/golangci-lint-action@v8
         with:
           version: latest
           args: --timeout=3m
   go-test:
     strategy:
       matrix:
-        go-version: [1.23.x]
+        go-version: [1.24.x]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -37,68 +37,58 @@ jobs:
         with:
           test-results: test.json
 
-  test:
+  grant-revoke-tests:
     runs-on: ubuntu-latest
-    # Define any services needed for the test suite (or delete this section)
-    # services:
-    #   postgres:
-    #     image: postgres:16
-    #     ports:
-    #       - "5432:5432"
-    #     env:
-    #       POSTGRES_PASSWORD: secretpassword
     env:
       BATON_LOG_LEVEL: debug
-      # Add any environment variables needed to run baton-outreach
-      # BATON_BASE_URL: 'http://localhost:8080'
-      # BATON_ACCESS_TOKEN: 'secret_token'
-      # The following parameters are passed to grant/revoke commands
-      # Change these to the correct IDs for your test data
-      CONNECTOR_GRANT: 'grant:entitlement:group:1234:member:user:9876'
-      CONNECTOR_ENTITLEMENT: 'entitlement:group:1234:member'
-      CONNECTOR_PRINCIPAL: 'user:9876'
-      CONNECTOR_PRINCIPAL_TYPE: 'user'
+      BATON_REFRESH_TOKEN: ${{ secrets.OUTREACH_REFRESH_TOKEN }}
+      BATON_OUTREACH_CLIENT_ID: ${{ secrets.OUTREACH_CLIENT_ID }}
+      BATON_OUTREACH_CLIENT_SECRET: ${{ secrets.OUTREACH_CLIENT_SECRET }}
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.22.x
+          go-version: 1.24.x
       - name: Checkout code
         uses: actions/checkout@v4
-      # Install any dependencies here (or delete this)
-      # - name: Install postgres client
-      #   run: sudo apt install postgresql-client
-      # Run any fixture setup here (or delete this)
-      # - name: Import sql into postgres
-      #   run: psql -h localhost --user postgres -f environment.sql
-      #   env:
-      #     PGPASSWORD: secretpassword
       - name: Build baton-outreach
         run: go build ./cmd/baton-outreach
-      - name: Run baton-outreach
-        run: ./baton-outreach
+      - name: Profile Grant/revoke test
+        uses: ConductorOne/github-workflows/actions/sync-test@v2
+        with:
+          connector: ./baton-outreach
+          baton-entitlement: 'profile:41:assigned'
+          baton-principal: '3'
+          baton-principal-type: user
+      - name: Team Grant/revoke test
+        uses: ConductorOne/github-workflows/actions/sync-test@v2
+        with:
+          connector: ./baton-outreach
+          baton-entitlement: 'team:1:member'
+          baton-principal: '3'
+          baton-principal-type: user
 
-      - name: Install baton
-        run: ./scripts/get-baton.sh && mv baton /usr/local/bin
 
-      - name: Check for grant before revoking
-
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-
-
-      - name: Revoke grants
-        run: ./baton-outreach --revoke-grant="${{ env.CONNECTOR_GRANT }}"
-
-      - name: Check grant was revoked
-        run: ./baton-outreach && baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status "if .grants then .grants[]?.principal.id.resource != \"${{ env.CONNECTOR_PRINCIPAL }}\" else . end"
-
-      - name: Grant entitlement
-        # Change the grant arguments to the correct IDs for your test data
-        run: ./baton-outreach --grant-entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --grant-principal="${{ env.CONNECTOR_PRINCIPAL }}" --grant-principal-type="${{ env.CONNECTOR_PRINCIPAL_TYPE }}"
-
-      - name: Check grant was re-granted
-
-        run:
-          baton grants --entitlement="${{ env.CONNECTOR_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
-
+  with-refresh-token-test:
+    runs-on: ubuntu-latest
+    env:
+      BATON_LOG_LEVEL: debug
+      OUTREACH_REFRESH_TOKEN: ${{ secrets.OUTREACH_REFRESH_TOKEN }}
+      OUTREACH_CLIENT_ID: ${{ secrets.OUTREACH_CLIENT_ID }}
+      OUTREACH_CLIENT_SECRET: ${{ secrets.OUTREACH_CLIENT_SECRET }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.x
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Build baton-outreach
+        run: go build ./cmd/baton-outreach
+      - name: Test refresh token authentication
+        env:
+          CONNECTOR_FLAGS: >-
+            --outreach-client-id='${{ env.OUTREACH_CLIENT_ID }}'
+            --outreach-client-secret='${{ env.OUTREACH_CLIENT_SECRET }}'
+            --refresh-token='${{ env.OUTREACH_REFRESH_TOKEN }}'
+        run: ./baton-outreach ${{ env.CONNECTOR_FLAGS }}

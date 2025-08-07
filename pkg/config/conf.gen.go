@@ -4,7 +4,10 @@ package config
 import "reflect" 
 
 type Outreach struct {
-	Configfield string `mapstructure:"configField"`
+	AccessToken string `mapstructure:"access-token"`
+	RefreshToken string `mapstructure:"refresh-token"`
+	OutreachClientSecret string `mapstructure:"outreach-client-secret"`
+	OutreachClientId string `mapstructure:"outreach-client-id"`
 }
 
 func (c* Outreach) findFieldByTag(tagValue string) (any, bool) {

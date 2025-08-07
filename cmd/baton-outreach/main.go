@@ -25,7 +25,7 @@ func main() {
 	_, cmd, err := config.DefineConfiguration(
 		ctx,
 		"baton-outreach",
-		getConnector[*cfg.Outreach],
+		getConnector,
 		cfg.Config,
 	)
 	if err != nil {
@@ -42,22 +42,46 @@ func main() {
 	}
 }
 
-// TODO: After the config has been generated, update this function to use the config.
-func getConnector[T field.Configurable](ctx context.Context, config T) (types.ConnectorServer, error) {
+func getConnector(ctx context.Context, config *cfg.Outreach) (types.ConnectorServer, error) {
+	var cb *connector.Connector
 	l := ctxzap.Extract(ctx)
 	if err := field.Validate(cfg.Config, config); err != nil {
 		return nil, err
 	}
 
-	cb, err := connector.New(ctx)
+	accessToken := config.AccessToken
+	if accessToken != "" {
+		cbWithAccessToken, err := connector.NewWithAccessToken(ctx, accessToken)
+		if err != nil {
+			l.Error("error creating connector with access token", zap.Error(err))
+			return nil, err
+		}
+
+		cb = cbWithAccessToken
+	}
+
+	refreshToken := config.RefreshToken
+	outreachClientID := config.OutreachClientId
+	outreachClientSecret := config.OutreachClientSecret
+
+	if outreachClientID != "" && outreachClientSecret != "" && refreshToken != "" {
+		cbWithRefreshToken, err := connector.NewWithRefreshToken(ctx, outreachClientID, outreachClientSecret, refreshToken)
+		if err != nil {
+			l.Error("error creating connector with refresh token", zap.Error(err))
+			return nil, err
+		}
+
+		cb = cbWithRefreshToken
+	}
+
+	if cb == nil {
+		return nil, fmt.Errorf("connector initialization failed")
+	}
+
+	conn, err := connectorbuilder.NewConnector(ctx, cb)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err
 	}
-	connector, err := connectorbuilder.NewConnector(ctx, cb)
-	if err != nil {
-		l.Error("error creating connector", zap.Error(err))
-		return nil, err
-	}
-	return connector, nil
+	return conn, nil
 }

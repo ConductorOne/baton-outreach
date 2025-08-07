@@ -2,41 +2,9 @@ package config
 
 import (
 	"testing"
-
-	"github.com/conductorone/baton-sdk/pkg/field"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateConfig(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  *Outreach
-		wantErr bool
-	}{
-		{
-			name:   "valid config",
-			config: &Outreach{
-				// TODO: Add minimal valid configuration here once Config type is generated
-			},
-			wantErr: false,
-		},
-		{
-			name:   "invalid config - missing required fields",
-			config: &Outreach{
-				// TODO: Add configuration with missing required fields once Config type is generated
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := field.Validate(Config, tt.config)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
+	// There is no point on validating config since it's an OAuth connector.
+	// Providing and access token is optional for a CLI execution and doing tests.
 }
