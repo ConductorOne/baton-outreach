@@ -37,7 +37,7 @@ jobs:
         with:
           test-results: test.json
 
-  test:
+  grant-revoke-tests:
     runs-on: ubuntu-latest
     env:
       BATON_LOG_LEVEL: debug
@@ -94,3 +94,24 @@ jobs:
 
       - name: Check grant was re-granted
         run: ./baton-outreach --access-token ${{ env.OUTREACH_ACCESS_TOKEN }} && baton grants --entitlement="${{ env.CONNECTOR_TEAM_ENTITLEMENT }}" --output-format=json | jq --exit-status ".grants[].principal.id.resource == \"${{ env.CONNECTOR_PRINCIPAL }}\""
+
+
+    with-refresh-token-test:
+        runs-on: ubuntu-latest
+        env:
+          BATON_LOG_LEVEL: debug
+          OUTREACH_REFRESH_TOKEN: ${{ secrets.OUTREACH_REFRESH_TOKEN }}
+          OUTREACH_CLIENT_ID: ${{ secrets.OUTREACH_CLIENT_ID }}
+          OUTREACH_CLIENT_SECRET: ${{ secrets.OUTREACH_CLIENT_SECRET }}
+
+        steps:
+          - name: Install Go
+            uses: actions/setup-go@v5
+            with:
+              go-version: 1.22.x
+          - name: Checkout code
+            uses: actions/checkout@v4
+          - name: Build baton-outreach
+            run: go build ./cmd/baton-outreach
+          - name: Run baton-outreach
+            run: ./baton-outreach --outreach-client-id='${{env.OUTREACH_CLIENT_ID}}' --outreach-client-secret='${{env.OUTREACH_CLIENT_SECRET}}' --refresh_token='${{env.OUTREACH_REFRESH_TOKEN}}'
