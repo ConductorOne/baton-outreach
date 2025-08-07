@@ -68,9 +68,21 @@ func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error)
 	return nil, nil
 }
 
-// New returns a new instance of the connector.
-func New(ctx context.Context, accessToken string) (*Connector, error) {
+// NewWithAccessToken returns a new instance of the connector created for CLI one-shot executions.
+func NewWithAccessToken(ctx context.Context, accessToken string) (*Connector, error) {
 	c, err := client.New(ctx, client.WithAccessToken(accessToken))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Connector{
+		client: c,
+	}, nil
+}
+
+// NewWithRefreshToken returns a new instance of the connector created for CLI with automatic token refresh.
+func NewWithRefreshToken(ctx context.Context, clientID, clientSecret, refreshToken string) (*Connector, error) {
+	c, err := client.New(ctx, client.WithRefreshToken(ctx, clientID, clientSecret, refreshToken))
 	if err != nil {
 		return nil, err
 	}

@@ -43,20 +43,39 @@ func main() {
 }
 
 func getConnector(ctx context.Context, config *cfg.Outreach) (types.ConnectorServer, error) {
+	var cb *connector.Connector
 	l := ctxzap.Extract(ctx)
 	if err := field.Validate(cfg.Config, config); err != nil {
 		return nil, err
 	}
 
 	accessToken := config.AccessToken
-	if accessToken == "" {
-		return nil, fmt.Errorf("accessToken is required")
+	if accessToken != "" {
+		cbWithAccessToken, err := connector.NewWithAccessToken(ctx, accessToken)
+		if err != nil {
+			l.Error("error creating connector with access token", zap.Error(err))
+			return nil, err
+		}
+
+		cb = cbWithAccessToken
 	}
 
-	cb, err := connector.New(ctx, accessToken)
-	if err != nil {
-		l.Error("error creating connector", zap.Error(err))
-		return nil, err
+	refreshToken := config.RefreshToken
+	outreachClientID := config.OutreachClientId
+	outreachClientSecret := config.OutreachClientSecret
+
+	if outreachClientID != "" && outreachClientSecret != "" && refreshToken != "" {
+		cbWithRefreshToken, err := connector.NewWithRefreshToken(ctx, outreachClientID, outreachClientSecret, refreshToken)
+		if err != nil {
+			l.Error("error creating connector with refresh token", zap.Error(err))
+			return nil, err
+		}
+
+		cb = cbWithRefreshToken
+	}
+
+	if cb == nil {
+		return nil, fmt.Errorf("connector initialization failed")
 	}
 
 	conn, err := connectorbuilder.NewConnector(ctx, cb)

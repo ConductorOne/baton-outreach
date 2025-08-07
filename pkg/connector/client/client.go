@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/uhttp"
@@ -14,6 +15,7 @@ import (
 )
 
 const (
+	authURL    = "https://api.outreach.io/oauth/token"
 	baseURL    = "https://api.outreach.io/api/v2"
 	usersEP    = "users"
 	teamsEP    = "teams"
@@ -43,6 +45,29 @@ type ConfigOption func(client *OutreachClient)
 
 func WithTokenSource(tokenSource oauth2.TokenSource) ConfigOption {
 	return func(client *OutreachClient) {
+		client.TokenSource = tokenSource
+	}
+}
+
+// WithRefreshToken receives a Refresh Token, Client ID and Client Secret from the platform to be able to renew the token when expired.
+// This ConfigOption is intended for CLI executions.
+func WithRefreshToken(ctx context.Context, clientID, clientSecret, refreshToken string) ConfigOption {
+	return func(client *OutreachClient) {
+		token := &oauth2.Token{
+			AccessToken:  "",
+			RefreshToken: refreshToken,
+			Expiry:       time.Now().Add(-1 * time.Second),
+		}
+
+		config := oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			Endpoint: oauth2.Endpoint{
+				TokenURL: authURL,
+			},
+		}
+		tokenSource := oauth2.ReuseTokenSource(token, config.TokenSource(ctx, token))
+
 		client.TokenSource = tokenSource
 	}
 }
