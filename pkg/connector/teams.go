@@ -65,7 +65,7 @@ func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 }
 
 func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	var teamEntitlements []*v2.Entitlement
+	var outAnnotations annotations.Annotations
 
 	displayName := fmt.Sprintf("Member of %s", resource.DisplayName)
 	description := fmt.Sprintf("Member of the %s team.", resource.DisplayName)
@@ -76,9 +76,7 @@ func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *
 		entitlement.WithDescription(description),
 	}
 
-	teamEntitlements = append(teamEntitlements, entitlement.NewAssignmentEntitlement(resource, teamPermissionName, assigmentOptions...))
-
-	return teamEntitlements, "", nil, nil
+	return []*v2.Entitlement{entitlement.NewAssignmentEntitlement(resource, teamPermissionName, assigmentOptions...)}, "", outAnnotations, nil
 }
 
 func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
@@ -123,7 +121,7 @@ func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 	teamID := entitlement.Resource.Id.Resource
 	userID, err := strconv.Atoi(principal.Id.Resource)
 	if err != nil {
-		return nil, err
+		return outAnnotations, err
 	}
 
 	teamDetails, rateLimitData, err := b.client.GetTeamByID(ctx, teamID)
@@ -138,6 +136,13 @@ func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 		teamMembers = *teamDetails.Relationships.Users.Data
 	}
 
+	for _, member := range teamMembers {
+		if member.Id == userID {
+			// It doesn't fail when "re-adding" an existing user to a Team, but to avoid the unnecessary request, I added this validation and the annotation.
+			outAnnotations.Update(&v2.GrantAlreadyExists{})
+			return outAnnotations, nil
+		}
+	}
 	teamMembers = append(teamMembers, client.DataDetailPair{
 		Id:   userID,
 		Type: "user",
@@ -173,7 +178,7 @@ func (b *teamBuilder) Revoke(ctx context.Context, grant *v2.Grant) (annotations.
 	}
 
 	if teamDetails.Relationships == nil || teamDetails.Relationships.Users == nil || teamDetails.Relationships.Users.Data == nil {
-		return nil, fmt.Errorf("revoke tried on the team {%s} but no members were found", teamID)
+		return nil, fmt.Errorf("revoke tried on the team {%s} but the members list was not accessible", teamID)
 	}
 
 	teamMembers := *teamDetails.Relationships.Users.Data

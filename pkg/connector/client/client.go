@@ -384,7 +384,6 @@ func (c *OutreachClient) doRequest(
 	res interface{},
 	body interface{},
 	rateLimitDescription *v2.RateLimitDescription,
-	reqOpts ...ReqOpt,
 ) (http.Header, error) {
 	var (
 		resp           *http.Response
@@ -396,10 +395,6 @@ func (c *OutreachClient) doRequest(
 	urlAddress, err := url.Parse(endpointUrl)
 	if err != nil {
 		return nil, err
-	}
-
-	for _, o := range reqOpts {
-		o(urlAddress)
 	}
 
 	accessToken, err := c.TokenSource.Token()
@@ -427,29 +422,20 @@ func (c *OutreachClient) doRequest(
 		return nil, err
 	}
 
-	switch method {
-	case http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch:
-		doOptions := []uhttp.DoOption{uhttp.WithErrorResponse(&errResponse)}
-		if res != nil {
-			doOptions = append(doOptions, uhttp.WithResponse(&res))
-		}
-		if rateLimitDescription != nil {
-			doOptions = append(doOptions, uhttp.WithRatelimitData(rateLimitDescription))
-		}
-
-		resp, err = c.client.Do(req, doOptions...)
-		if resp != nil {
-			defer resp.Body.Close()
-		}
-
-	case http.MethodDelete:
-		resp, err = c.client.Do(req)
-		if resp != nil {
-			defer resp.Body.Close()
-		}
+	doOptions := []uhttp.DoOption{uhttp.WithErrorResponse(&errResponse)}
+	if rateLimitDescription != nil {
+		doOptions = append(doOptions, uhttp.WithRatelimitData(rateLimitDescription))
 	}
+	if res != nil {
+		doOptions = append(doOptions, uhttp.WithResponse(&res))
+	}
+
+	resp, err = c.client.Do(req, doOptions...)
 	if err != nil {
 		return nil, err
+	}
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
 	}
 
 	if resp != nil {

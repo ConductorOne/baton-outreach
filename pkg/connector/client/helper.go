@@ -1,13 +1,9 @@
 package client
 
 import (
-	"net/url"
-
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 )
-
-type ReqOpt func(reqURL *url.URL)
 
 func GetToken(token string, resourceID *v2.ResourceId) (*pagination.Bag, string, error) {
 	bag := &pagination.Bag{}

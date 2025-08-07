@@ -37,16 +37,6 @@ func (d *Connector) Metadata(_ context.Context) (*v2.ConnectorMetadata, error) {
 		Description: "Baton connector to sync users, teams and profiles from Outreach",
 		AccountCreationSchema: &v2.ConnectorAccountCreationSchema{
 			FieldMap: map[string]*v2.ConnectorAccountCreationSchema_Field{
-				"email": {
-					DisplayName: "Email",
-					Required:    true,
-					Description: "This email will be used as the login for the user.",
-					Field: &v2.ConnectorAccountCreationSchema_Field_StringField{
-						StringField: &v2.ConnectorAccountCreationSchema_StringField{},
-					},
-					Placeholder: "john.doe@example.com",
-					Order:       1,
-				},
 				"first_name": {
 					DisplayName: "First name",
 					Required:    true,
@@ -55,7 +45,7 @@ func (d *Connector) Metadata(_ context.Context) (*v2.ConnectorMetadata, error) {
 						StringField: &v2.ConnectorAccountCreationSchema_StringField{},
 					},
 					Placeholder: "John",
-					Order:       2,
+					Order:       1,
 				},
 				"last_name": {
 					DisplayName: "Last name",
@@ -65,7 +55,7 @@ func (d *Connector) Metadata(_ context.Context) (*v2.ConnectorMetadata, error) {
 						StringField: &v2.ConnectorAccountCreationSchema_StringField{},
 					},
 					Placeholder: "Doe",
-					Order:       3,
+					Order:       2,
 				},
 			},
 		},

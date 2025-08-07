@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/conductorone/baton-sdk/pkg/annotations"
-
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
+	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
@@ -144,6 +143,9 @@ func (b *userBuilder) CreateAccount(
 func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error) {
 	pMap := accountInfo.Profile.AsMap()
 
+	// Login field contains the user email directly taken from C1.
+	email := accountInfo.Login
+
 	firstName, ok := pMap["first_name"].(string)
 	if !ok || firstName == "" {
 		return nil, fmt.Errorf("first_name is required")
@@ -152,11 +154,6 @@ func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error)
 	lastName, ok := pMap["last_name"].(string)
 	if !ok || lastName == "" {
 		return nil, fmt.Errorf("last_name is required")
-	}
-
-	email, ok := pMap["email"].(string)
-	if !ok || email == "" {
-		return nil, fmt.Errorf("email is required")
 	}
 
 	newUserInfo := &client.NewUserBody{
@@ -229,15 +226,12 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	}
 
 	userTraits = append(userTraits,
+		rs.WithLastLogin(user.Attributes.LastSignInAt),
 		rs.WithEmail(primaryEmail, true),
 		rs.WithUserLogin(primaryEmail),
 		rs.WithUserProfile(profile),
 		rs.WithStatus(userStatus),
 	)
-
-	if user.Attributes.LastSignInAt != nil {
-		userTraits = append(userTraits, rs.WithLastLogin(*user.Attributes.LastSignInAt))
-	}
 
 	ret, err := rs.NewUserResource(
 		user.Attributes.Name,

@@ -12,8 +12,9 @@ import (
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 )
 
+// defaultProfileID is the ID for the 'Default' profile, a system-provided profile.
+const defaultProfileID = 2
 const profilePermissionName = "assigned"
-const defaultProfileID = 2 // This is the ID for the 'Default' profile, a system-provided profile.
 
 type profileBuilder struct {
 	client *client.OutreachClient
@@ -63,7 +64,7 @@ func (b *profileBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pag
 }
 
 func (b *profileBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	var profileEntitlements []*v2.Entitlement
+	var outAnnotations annotations.Annotations
 
 	assigmentOptions := []entitlement.EntitlementOption{
 		entitlement.WithGrantableTo(userResourceType),
@@ -71,9 +72,7 @@ func (b *profileBuilder) Entitlements(_ context.Context, resource *v2.Resource, 
 		entitlement.WithDescription(resource.DisplayName),
 	}
 
-	profileEntitlements = append(profileEntitlements, entitlement.NewPermissionEntitlement(resource, profilePermissionName, assigmentOptions...))
-
-	return profileEntitlements, "", nil, nil
+	return []*v2.Entitlement{entitlement.NewPermissionEntitlement(resource, profilePermissionName, assigmentOptions...)}, "", outAnnotations, nil
 }
 
 // Grants function gets implemented on the users resource, since the users records have that data.
