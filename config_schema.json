@@ -1,8 +1,13 @@
 {
   "fields": [
     {
-      "name": "configField",
-      "stringField": {}
+      "name": "access-token",
+      "displayName": "Access Token",
+      "description": "Generated access token to communicate with Outreach API. Only for CLI one-shot executions.",
+      "isSecret": true,
+      "stringField": {
+        "rules": {}
+      }
     },
     {
       "name": "log-level",
@@ -47,7 +52,58 @@
       "description": "Disable OpenTelemetry tracing",
       "isOps": true,
       "boolField": {}
+    },
+    {
+      "name": "outreach-client-id",
+      "displayName": "Outreach application Client ID",
+      "description": "Generated Client ID to communicate with Outreach API. Only for CLI executions.",
+      "stringField": {
+        "rules": {}
+      }
+    },
+    {
+      "name": "outreach-client-secret",
+      "displayName": "Outreach application Client Secret",
+      "description": "Generated Client Secret to communicate with Outreach API. Only for CLI executions.",
+      "isSecret": true,
+      "stringField": {
+        "rules": {}
+      }
+    },
+    {
+      "name": "refresh-token",
+      "displayName": "Generated Refresh Token",
+      "description": "Refresh Token generated with code_grant auth type. Only for CLI executions.",
+      "stringField": {
+        "rules": {}
+      }
     }
   ],
-  "displayName": "Outreach"
+  "constraints": [
+    {
+      "kind": "CONSTRAINT_KIND_AT_LEAST_ONE",
+      "fieldNames": [
+        "access-token",
+        "refresh-token"
+      ]
+    },
+    {
+      "kind": "CONSTRAINT_KIND_MUTUALLY_EXCLUSIVE",
+      "fieldNames": [
+        "access-token",
+        "refresh-token"
+      ]
+    },
+    {
+      "kind": "CONSTRAINT_KIND_REQUIRED_TOGETHER",
+      "fieldNames": [
+        "outreach-client-secret",
+        "outreach-client-id",
+        "refresh-token"
+      ]
+    }
+  ],
+  "displayName": "Outreach",
+  "helpUrl": "/docs/baton/outreach",
+  "iconUrl": "/static/app-icons/outreach.svg"
 }
