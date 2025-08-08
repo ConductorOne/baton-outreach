@@ -25,10 +25,10 @@ jobs:
         run: go build -o connector ./cmd/baton-outreach
 
       - name: Run and save config output
-        run: ./connector --access-token "ACCESS_TOKEN" config > config_schema.json
+        run: ./connector config > config_schema.json
 
       - name: Run and save capabilities output
-        run: ./connector capabilities > baton_capabilities.json
+        run: ./connector --access-token "ACCESS_TOKEN" capabilities > baton_capabilities.json
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v9
