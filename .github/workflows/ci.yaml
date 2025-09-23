@@ -4,12 +4,12 @@ jobs:
   go-lint:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.x
-      - name: Checkout code
-        uses: actions/checkout@v4
+          go-version-file: go.mod
       - name: Run linters
         uses: golangci/golangci-lint-action@v8
         with:
@@ -18,22 +18,21 @@ jobs:
   go-test:
     strategy:
       matrix:
-        go-version: [1.24.x]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         if: success()
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Checkout code
-        uses: actions/checkout@v4
+          go-version-file: go.mod
       - name: go tests
         run: (set -o pipefail && go test -v -covermode=count -json ./... | tee test.json)
       - name: annotate go tests
         if: always()
-        uses: guyarb/golang-test-annotations@v0.6.0
+        uses: guyarb/golang-test-annotations@v0.8.0
         with:
           test-results: test.json
 
@@ -45,29 +44,28 @@ jobs:
       BATON_OUTREACH_CLIENT_ID: ${{ secrets.OUTREACH_CLIENT_ID }}
       BATON_OUTREACH_CLIENT_SECRET: ${{ secrets.OUTREACH_CLIENT_SECRET }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.x
-      - name: Checkout code
-        uses: actions/checkout@v4
+          go-version-file: go.mod
       - name: Build baton-outreach
         run: go build ./cmd/baton-outreach
       - name: Profile Grant/revoke test
         uses: ConductorOne/github-workflows/actions/sync-test@v2
         with:
           connector: ./baton-outreach
-          baton-entitlement: 'profile:41:assigned'
-          baton-principal: '3'
+          baton-entitlement: "profile:41:assigned"
+          baton-principal: "3"
           baton-principal-type: user
       - name: Team Grant/revoke test
         uses: ConductorOne/github-workflows/actions/sync-test@v2
         with:
           connector: ./baton-outreach
-          baton-entitlement: 'team:1:member'
-          baton-principal: '3'
+          baton-entitlement: "team:1:member"
+          baton-principal: "3"
           baton-principal-type: user
-
 
   with-refresh-token-test:
     runs-on: ubuntu-latest
@@ -77,12 +75,12 @@ jobs:
       OUTREACH_CLIENT_ID: ${{ secrets.OUTREACH_CLIENT_ID }}
       OUTREACH_CLIENT_SECRET: ${{ secrets.OUTREACH_CLIENT_SECRET }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24.x
-      - name: Checkout code
-        uses: actions/checkout@v4
+          go-version-file: go.mod
       - name: Build baton-outreach
         run: go build ./cmd/baton-outreach
       - name: Test refresh token authentication

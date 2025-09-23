@@ -113,7 +113,7 @@ func (b *userBuilder) CreateAccountCapabilityDetails(_ context.Context) (*v2.Cre
 func (b *userBuilder) CreateAccount(
 	ctx context.Context,
 	accountInfo *v2.AccountInfo,
-	_ *v2.CredentialOptions,
+	_ *v2.LocalCredentialOptions,
 ) (connectorbuilder.CreateAccountResponse, []*v2.PlaintextData, annotations.Annotations, error) {
 	outAnnotations := annotations.Annotations{}
 
