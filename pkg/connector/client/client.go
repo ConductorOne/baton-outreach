@@ -41,9 +41,9 @@ func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) 
 		}
 
 		requestURL = usersURL
+		requestOptions = append(requestOptions, WithMaximumPageSize())
 	}
 
-	requestOptions = append(requestOptions, WithMaximumPageSize())
 	rateLimitDescription := &v2.RateLimitDescription{}
 	_, err := c.doRequest(
 		ctx,
@@ -223,9 +223,9 @@ func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) 
 		}
 
 		requestURL = teamsURL
+		requestOptions = append(requestOptions, WithMaximumPageSize())
 	}
 
-	requestOptions = append(requestOptions, WithMaximumPageSize())
 	rateLimitDescription := &v2.RateLimitDescription{}
 	_, err := c.doRequest(
 		ctx,
@@ -290,9 +290,9 @@ func (c *OutreachClient) ListAllProfiles(ctx context.Context, nextPageLink strin
 		}
 
 		requestURL = rolesURL
+		requestOptions = append(requestOptions, WithMaximumPageSize())
 	}
 
-	requestOptions = append(requestOptions, WithMaximumPageSize())
 	rateLimitDescription := &v2.RateLimitDescription{}
 	_, err := c.doRequest(
 		ctx,
