@@ -3,12 +3,29 @@ package client
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"golang.org/x/oauth2"
 )
+
+const maximumPageSize = "1000"
+
+type ReqOpt func(reqURL *url.URL)
+
+func WithQueryParam(key string, value string) ReqOpt {
+	return func(reqURL *url.URL) {
+		q := reqURL.Query()
+		q.Set(key, value)
+		reqURL.RawQuery = q.Encode()
+	}
+}
+
+func WithMaximumPageSize() ReqOpt {
+	return WithQueryParam("page[size]", maximumPageSize)
+}
 
 func GetToken(token string, resourceID *v2.ResourceId) (*pagination.Bag, string, error) {
 	bag := &pagination.Bag{}

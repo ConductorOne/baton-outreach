@@ -67,7 +67,7 @@ jobs:
           baton-principal: "3"
           baton-principal-type: user
 
-  with-refresh-token-test:
+  refresh-token-test:
     runs-on: ubuntu-latest
     env:
       BATON_LOG_LEVEL: debug

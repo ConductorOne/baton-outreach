@@ -27,8 +27,9 @@ type OutreachClient struct {
 
 func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) ([]*User, string, *v2.RateLimitDescription, error) {
 	var (
-		requestURL string
-		response   UsersResponse
+		requestURL     string
+		response       UsersResponse
+		requestOptions []ReqOpt
 	)
 
 	if nextPageLink != "" {
@@ -40,6 +41,7 @@ func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) 
 		}
 
 		requestURL = usersURL
+		requestOptions = append(requestOptions, WithMaximumPageSize())
 	}
 
 	rateLimitDescription := &v2.RateLimitDescription{}
@@ -50,6 +52,7 @@ func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) 
 		&response,
 		nil,
 		rateLimitDescription,
+		requestOptions...,
 	)
 	if err != nil {
 		return nil, "", rateLimitDescription, err
@@ -206,8 +209,9 @@ func (c *OutreachClient) CreateUser(ctx context.Context, newUserInfo NewUserBody
 
 func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) ([]*Team, string, *v2.RateLimitDescription, error) {
 	var (
-		requestURL string
-		response   TeamsResponse
+		requestURL     string
+		response       TeamsResponse
+		requestOptions []ReqOpt
 	)
 
 	if nextPageLink != "" {
@@ -219,6 +223,7 @@ func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) 
 		}
 
 		requestURL = teamsURL
+		requestOptions = append(requestOptions, WithMaximumPageSize())
 	}
 
 	rateLimitDescription := &v2.RateLimitDescription{}
@@ -229,6 +234,7 @@ func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) 
 		&response,
 		nil,
 		rateLimitDescription,
+		requestOptions...,
 	)
 	if err != nil {
 		return nil, "", rateLimitDescription, err
@@ -270,8 +276,9 @@ func (c *OutreachClient) GetTeamByID(ctx context.Context, teamID string) (*Team,
 
 func (c *OutreachClient) ListAllProfiles(ctx context.Context, nextPageLink string) ([]*Profile, string, *v2.RateLimitDescription, error) {
 	var (
-		requestURL string
-		response   ProfilesResponse
+		requestURL     string
+		response       ProfilesResponse
+		requestOptions []ReqOpt
 	)
 
 	if nextPageLink != "" {
@@ -283,6 +290,7 @@ func (c *OutreachClient) ListAllProfiles(ctx context.Context, nextPageLink strin
 		}
 
 		requestURL = rolesURL
+		requestOptions = append(requestOptions, WithMaximumPageSize())
 	}
 
 	rateLimitDescription := &v2.RateLimitDescription{}
@@ -293,6 +301,7 @@ func (c *OutreachClient) ListAllProfiles(ctx context.Context, nextPageLink strin
 		&response,
 		nil,
 		rateLimitDescription,
+		requestOptions...,
 	)
 	if err != nil {
 		return nil, "", rateLimitDescription, err
@@ -356,6 +365,7 @@ func (c *OutreachClient) doRequest(
 	res interface{},
 	body interface{},
 	rateLimitDescription *v2.RateLimitDescription,
+	reqOpts ...ReqOpt,
 ) (http.Header, error) {
 	var (
 		resp           *http.Response
@@ -367,6 +377,10 @@ func (c *OutreachClient) doRequest(
 	urlAddress, err := url.Parse(endpointUrl)
 	if err != nil {
 		return nil, err
+	}
+
+	for _, o := range reqOpts {
+		o(urlAddress)
 	}
 
 	accessToken, err := c.TokenSource.Token()
