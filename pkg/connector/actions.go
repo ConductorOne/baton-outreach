@@ -38,7 +38,6 @@ var enableUserAction = &v2.BatonActionSchema{
 		},
 	},
 	ActionType: []v2.ActionType{
-		v2.ActionType_ACTION_TYPE_ACCOUNT,
 		v2.ActionType_ACTION_TYPE_ACCOUNT_ENABLE,
 	},
 }
@@ -61,7 +60,6 @@ var disableUserAction = &v2.BatonActionSchema{
 		},
 	},
 	ActionType: []v2.ActionType{
-		v2.ActionType_ACTION_TYPE_ACCOUNT,
 		v2.ActionType_ACTION_TYPE_ACCOUNT_DISABLE,
 	},
 }
