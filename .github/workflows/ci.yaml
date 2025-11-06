@@ -99,6 +99,10 @@ jobs:
       OUTREACH_CLIENT_ID: ${{ secrets.OUTREACH_CLIENT_ID }}
       OUTREACH_CLIENT_SECRET: ${{ secrets.OUTREACH_CLIENT_SECRET }}
       TEST_USER_ID: ${{ secrets.OUTREACH_TEST_USER_ID }}
+      CONNECTOR_FLAGS: >-
+        --outreach-client-id='${{ env.OUTREACH_CLIENT_ID }}'
+        --outreach-client-secret='${{ env.OUTREACH_CLIENT_SECRET }}'
+        --refresh-token='${{ env.OUTREACH_REFRESH_TOKEN }}'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -109,21 +113,11 @@ jobs:
       - name: Build baton-outreach
         run: go build ./cmd/baton-outreach
       - name: Test disable user action
-        env:
-          CONNECTOR_FLAGS: >-
-            --outreach-client-id='${{ env.OUTREACH_CLIENT_ID }}'
-            --outreach-client-secret='${{ env.OUTREACH_CLIENT_SECRET }}'
-            --refresh-token='${{ env.OUTREACH_REFRESH_TOKEN }}'
         run: |
           ./baton-outreach ${{ env.CONNECTOR_FLAGS }} \
             --invoke-action=disable_user \
             --invoke-action-args='{"user_id": "${{ env.TEST_USER_ID }}"}'
       - name: Test enable user action
-        env:
-          CONNECTOR_FLAGS: >-
-            --outreach-client-id='${{ env.OUTREACH_CLIENT_ID }}'
-            --outreach-client-secret='${{ env.OUTREACH_CLIENT_SECRET }}'
-            --refresh-token='${{ env.OUTREACH_REFRESH_TOKEN }}'
         run: |
           ./baton-outreach ${{ env.CONNECTOR_FLAGS }} \
             --invoke-action=enable_user \
