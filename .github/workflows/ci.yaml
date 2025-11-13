@@ -90,3 +90,35 @@ jobs:
             --outreach-client-secret='${{ env.OUTREACH_CLIENT_SECRET }}'
             --refresh-token='${{ env.OUTREACH_REFRESH_TOKEN }}'
         run: ./baton-outreach ${{ env.CONNECTOR_FLAGS }}
+
+  action-tests:
+    runs-on: ubuntu-latest
+    env:
+      BATON_LOG_LEVEL: debug
+      OUTREACH_REFRESH_TOKEN: ${{ secrets.OUTREACH_REFRESH_TOKEN }}
+      OUTREACH_CLIENT_ID: ${{ secrets.OUTREACH_CLIENT_ID }}
+      OUTREACH_CLIENT_SECRET: ${{ secrets.OUTREACH_CLIENT_SECRET }}
+      TEST_USER_ID: ${{ secrets.OUTREACH_TEST_USER_ID }}
+      CONNECTOR_FLAGS: >-
+        --outreach-client-id='${{ env.OUTREACH_CLIENT_ID }}'
+        --outreach-client-secret='${{ env.OUTREACH_CLIENT_SECRET }}'
+        --refresh-token='${{ env.OUTREACH_REFRESH_TOKEN }}'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build baton-outreach
+        run: go build ./cmd/baton-outreach
+      - name: Test disable user action
+        run: |
+          ./baton-outreach ${{ env.CONNECTOR_FLAGS }} \
+            --invoke-action=disable_user \
+            --invoke-action-args='{"user_id": "${{ env.TEST_USER_ID }}"}'
+      - name: Test enable user action
+        run: |
+          ./baton-outreach ${{ env.CONNECTOR_FLAGS }} \
+            --invoke-action=enable_user \
+            --invoke-action-args='{"user_id": "${{ env.TEST_USER_ID }}"}'

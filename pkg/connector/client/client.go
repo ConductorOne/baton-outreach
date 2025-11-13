@@ -141,13 +141,24 @@ func (c *OutreachClient) UpdateUserProfile(ctx context.Context, userID string, p
 }
 
 func (c *OutreachClient) DisableUser(ctx context.Context, userID string) (*v2.RateLimitDescription, error) {
+	_, rateLimitDescription, err := c.SetUserLocked(ctx, userID, true)
+	if err != nil {
+		return rateLimitDescription, err
+	}
+	return rateLimitDescription, nil
+}
+
+func (c *OutreachClient) SetUserLocked(ctx context.Context, userID string, locked bool) (*User, *v2.RateLimitDescription, error) {
 	var requestBody struct {
 		Data UserLockStatusUpdate `json:"data"`
+	}
+	var response struct {
+		User *User `json:"data"`
 	}
 
 	numericUserID, err := strconv.Atoi(userID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	requestBody.Data = UserLockStatusUpdate{
@@ -156,13 +167,13 @@ func (c *OutreachClient) DisableUser(ctx context.Context, userID string) (*v2.Ra
 		Attributes: struct {
 			Locked bool `json:"locked"`
 		}{
-			Locked: true,
+			Locked: locked,
 		},
 	}
 
 	userURL, err := url.JoinPath(baseURL, usersEP, userID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	rateLimitDescription := &v2.RateLimitDescription{}
@@ -170,15 +181,15 @@ func (c *OutreachClient) DisableUser(ctx context.Context, userID string) (*v2.Ra
 		ctx,
 		http.MethodPatch,
 		userURL,
-		nil,
+		&response,
 		requestBody,
 		rateLimitDescription,
 	)
 	if err != nil {
-		return rateLimitDescription, err
+		return nil, rateLimitDescription, err
 	}
 
-	return rateLimitDescription, nil
+	return response.User, rateLimitDescription, nil
 }
 
 func (c *OutreachClient) CreateUser(ctx context.Context, newUserInfo NewUserBody) (*User, *v2.RateLimitDescription, error) {
