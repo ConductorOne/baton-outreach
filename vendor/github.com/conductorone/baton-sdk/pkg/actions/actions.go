@@ -138,7 +138,7 @@ func (a *ActionManager) CleanupOldActions(ctx context.Context) {
 	l.Debug("cleaned up old actions", zap.Int("count", count))
 }
 
-func (a *ActionManager) registerActionSchema(_ context.Context, name string, schema *v2.BatonActionSchema) error {
+func (a *ActionManager) registerActionSchema(ctx context.Context, name string, schema *v2.BatonActionSchema) error {
 	if name == "" {
 		return errors.New("action name cannot be empty")
 	}
