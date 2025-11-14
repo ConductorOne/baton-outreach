@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
@@ -18,6 +19,12 @@ import (
 
 type userBuilder struct {
 	client *client.OutreachClient
+	cache  *userCache
+}
+
+type userCache struct {
+	mu    sync.RWMutex
+	users map[string]*client.User
 }
 
 func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
@@ -44,6 +51,7 @@ func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		return nil, "", outAnnotations, err
 	}
 
+	b.cache.SetAll(users)
 	for _, user := range users {
 		userResource, err := parseIntoUserResource(*user)
 		if err != nil {
@@ -75,13 +83,10 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 
 	userID := resource.Id.Resource
 
-	user, rateLimitData, err := b.client.GetUserByID(ctx, userID)
-	if err != nil {
-		if rateLimitData != nil {
-			outAnnotations.WithRateLimiting(rateLimitData)
-		}
-
-		return nil, "", outAnnotations, err
+	user, ok := b.cache.Get(userID)
+	if !ok {
+		//user not found in cache
+		return grantResources, "", nil, nil
 	}
 
 	if user.Relationships == nil || user.Relationships.Profile == nil || user.Relationships.Profile.Data == nil {
@@ -251,5 +256,27 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 func newUserBuilder(c *client.OutreachClient) *userBuilder {
 	return &userBuilder{
 		client: c,
+		cache:  newUserCache(),
+	}
+}
+
+func newUserCache() *userCache {
+	return &userCache{
+		users: make(map[string]*client.User),
+	}
+}
+
+func (c *userCache) Get(userID string) (*client.User, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	user, ok := c.users[userID]
+	return user, ok
+}
+
+func (c *userCache) SetAll(users []*client.User) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, user := range users {
+		c.users[strconv.Itoa(user.Id)] = user // Adjust field name as needed
 	}
 }
