@@ -82,11 +82,22 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 	outAnnotations := annotations.Annotations{}
 
 	userID := resource.Id.Resource
+	var user *client.User
 
-	user, ok := b.cache.Get(userID)
-	if !ok {
+	cachedUser, ok := b.cache.Get(userID)
+	if ok {
+		user = cachedUser
+	} else {
 		//user not found in cache
-		return grantResources, "", nil, nil
+		u, rateLimitData, err := b.client.GetUserByID(ctx, userID)
+		if err != nil {
+			if rateLimitData != nil {
+				outAnnotations.WithRateLimiting(rateLimitData)
+			}
+
+			return nil, "", outAnnotations, err
+		}
+		user = u
 	}
 
 	if user.Relationships == nil || user.Relationships.Profile == nil || user.Relationships.Profile.Data == nil {
