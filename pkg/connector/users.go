@@ -9,6 +9,7 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
+	"github.com/conductorone/baton-sdk/pkg/session"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"google.golang.org/grpc/codes"
@@ -46,6 +47,7 @@ func (b *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		}, fmt.Errorf("error listing users: %w", err)
 	}
 
+	session.SetManyJSON(ctx, attr.Session, parseJSONCache(users))
 	for _, user := range users {
 		userResource, err := parseIntoUserResource(*user)
 		if err != nil {
@@ -78,19 +80,31 @@ func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ rs.SyncO
 }
 
 // Grants implements the Grants function for profiles resource.
-func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
+func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, attr rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var grantResources []*v2.Grant
 	outAnnotations := annotations.Annotations{}
 
 	userID := resource.Id.Resource
+	var user *client.User
 
-	user, rateLimitData, err := b.client.GetUserByID(ctx, userID)
+	cachedUser, found, err := session.GetJSON[*client.User](ctx, attr.Session, userID)
 	if err != nil {
-		if rateLimitData != nil {
-			outAnnotations.WithRateLimiting(rateLimitData)
-		}
-
 		return nil, &rs.SyncOpResults{Annotations: outAnnotations}, err
+	}
+
+	if found {
+		user = cachedUser
+	} else {
+		//user not found in cache
+		u, rateLimitData, err := b.client.GetUserByID(ctx, userID)
+		if err != nil {
+			if rateLimitData != nil {
+				outAnnotations.WithRateLimiting(rateLimitData)
+			}
+
+			return nil, &rs.SyncOpResults{Annotations: outAnnotations}, err
+		}
+		user = u
 	}
 
 	if user.Relationships == nil || user.Relationships.Profile == nil || user.Relationships.Profile.Data == nil {
@@ -265,4 +279,13 @@ func newUserBuilder(c *client.OutreachClient) *userBuilder {
 	return &userBuilder{
 		client: c,
 	}
+}
+
+func parseJSONCache(users []*client.User) map[string]*client.User {
+	usersMap := make(map[string]*client.User)
+	for _, user := range users {
+		userIDStr := strconv.Itoa(user.Id)
+		usersMap[userIDStr] = user
+	}
+	return usersMap
 }
