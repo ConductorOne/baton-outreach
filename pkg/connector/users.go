@@ -9,7 +9,6 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"google.golang.org/grpc/codes"
@@ -24,16 +23,17 @@ func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 	return userResourceType
 }
 
-func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
+func (b *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, attr rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
 	var (
 		userResources []*v2.Resource
 		nextPageToken string
 	)
 	outAnnotations := annotations.Annotations{}
+	token := attr.PageToken.Token
 
-	bag, nextPage, err := client.GetToken(pToken.Token, &v2.ResourceId{ResourceType: userResourceType.Id})
+	bag, nextPage, err := client.GetToken(token, &v2.ResourceId{ResourceType: userResourceType.Id})
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	users, nextPageLink, rateLimitData, err := b.client.ListAllUsers(ctx, nextPage)
@@ -41,13 +41,17 @@ func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		if rateLimitData != nil {
 			outAnnotations.WithRateLimiting(rateLimitData)
 		}
-		return nil, "", outAnnotations, err
+		return nil, &rs.SyncOpResults{
+			Annotations: outAnnotations,
+		}, fmt.Errorf("error listing users: %w", err)
 	}
 
 	for _, user := range users {
 		userResource, err := parseIntoUserResource(*user)
 		if err != nil {
-			return nil, "", outAnnotations, err
+			return nil, &rs.SyncOpResults{
+				Annotations: outAnnotations,
+			}, fmt.Errorf("error getting user resource: %w", err)
 		}
 
 		userResources = append(userResources, userResource)
@@ -56,20 +60,25 @@ func (b *userBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 	if nextPageLink != "" {
 		nextPageToken, err = bag.NextToken(nextPageLink)
 		if err != nil {
-			return nil, "", outAnnotations, err
+			return nil, &rs.SyncOpResults{
+				Annotations: outAnnotations,
+			}, fmt.Errorf("error parsing next page token for users: %w", err)
 		}
 	}
 
-	return userResources, nextPageToken, outAnnotations, nil
+	return userResources, &rs.SyncOpResults{
+		NextPageToken: nextPageToken,
+		Annotations:   outAnnotations,
+	}, nil
 }
 
 // Entitlements always returns an empty slice for users.
-func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
-	return nil, "", nil, nil
+func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
+	return nil, nil, nil
 }
 
 // Grants implements the Grants function for profiles resource.
-func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var grantResources []*v2.Grant
 	outAnnotations := annotations.Annotations{}
 
@@ -81,11 +90,13 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 			outAnnotations.WithRateLimiting(rateLimitData)
 		}
 
-		return nil, "", outAnnotations, err
+		return nil, &rs.SyncOpResults{Annotations: outAnnotations}, err
 	}
 
 	if user.Relationships == nil || user.Relationships.Profile == nil || user.Relationships.Profile.Data == nil {
-		return nil, "", outAnnotations, status.Errorf(codes.NotFound, "user {%s} profile is missing", userID)
+		return nil, &rs.SyncOpResults{
+			Annotations: outAnnotations,
+		}, status.Errorf(codes.NotFound, "user {%s} profile is missing", userID)
 	}
 
 	userProfile := user.Relationships.Profile
@@ -98,7 +109,9 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 
 	grantResources = append(grantResources, grant.NewGrant(profileResource, profilePermissionName, resource))
 
-	return grantResources, "", outAnnotations, nil
+	return grantResources, &rs.SyncOpResults{
+		Annotations: outAnnotations,
+	}, nil
 }
 
 func (b *userBuilder) CreateAccountCapabilityDetails(_ context.Context) (*v2.CredentialDetailsAccountProvisioning, annotations.Annotations, error) {

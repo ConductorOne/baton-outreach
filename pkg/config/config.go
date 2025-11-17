@@ -17,6 +17,7 @@ var (
 		field.WithDescription("Generated access token to communicate with Outreach API. Only for CLI one-shot executions."),
 		field.WithRequired(false),
 		field.WithIsSecret(true),
+		field.WithExportTarget(field.ExportTargetCLIOnly),
 	)
 
 	outreachClientSecretField = field.StringField("outreach-client-secret",
@@ -24,18 +25,27 @@ var (
 		field.WithDescription("Generated Client Secret to communicate with Outreach API. Only for CLI executions."),
 		field.WithRequired(false),
 		field.WithIsSecret(true),
+		field.WithExportTarget(field.ExportTargetCLIOnly),
 	)
 
 	outreachClientIDField = field.StringField("outreach-client-id",
 		field.WithDisplayName("Outreach application Client ID"),
 		field.WithDescription("Generated Client ID to communicate with Outreach API. Only for CLI executions."),
 		field.WithRequired(false),
+		field.WithExportTarget(field.ExportTargetCLIOnly),
 	)
 
 	refreshToken = field.StringField("refresh-token",
 		field.WithDisplayName("Generated Refresh Token"),
 		field.WithDescription("Refresh Token generated with code_grant auth type. Only for CLI executions."),
 		field.WithRequired(false),
+		field.WithExportTarget(field.ExportTargetCLIOnly),
+	)
+
+	oauth2TokenField = field.Oauth2Field(
+		"oauth2-token",
+		field.WithDisplayName("OAuth Authentication"),
+		field.WithDescription("The OAuth Authentication"),
 	)
 
 	ConfigurationFields = []field.SchemaField{
@@ -44,14 +54,15 @@ var (
 		refreshToken,
 		outreachClientSecretField,
 		outreachClientIDField,
+		oauth2TokenField,
 	}
 
 	// FieldRelationships defines relationships between the ConfigurationFields that can be automatically validated.
 	// For example, a username and password can be required together, or an access token can be
 	// marked as mutually exclusive from the username password pair.
 	FieldRelationships = []field.SchemaFieldRelationship{
-		field.FieldsAtLeastOneUsed(accessTokenField, refreshToken),
-		field.FieldsMutuallyExclusive(accessTokenField, refreshToken),
+		field.FieldsAtLeastOneUsed(accessTokenField, refreshToken, oauth2TokenField),
+		field.FieldsMutuallyExclusive(accessTokenField, refreshToken, oauth2TokenField),
 		field.FieldsRequiredTogether(outreachClientSecretField, outreachClientIDField, refreshToken)}
 )
 

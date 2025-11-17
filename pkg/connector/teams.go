@@ -8,7 +8,6 @@ import (
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/pagination"
 	"github.com/conductorone/baton-sdk/pkg/types/entitlement"
 	"github.com/conductorone/baton-sdk/pkg/types/grant"
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
@@ -25,16 +24,17 @@ func (b *teamBuilder) ResourceType(_ context.Context) *v2.ResourceType {
 	return teamResourceType
 }
 
-func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagination.Token) ([]*v2.Resource, string, annotations.Annotations, error) {
+func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, attr rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
 	var (
 		teamResources []*v2.Resource
 		nextPageToken string
 	)
 	outAnnotations := annotations.Annotations{}
+	token := attr.PageToken.Token
 
-	bag, nextPage, err := client.GetToken(pToken.Token, &v2.ResourceId{ResourceType: teamResourceType.Id})
+	bag, nextPage, err := client.GetToken(token, &v2.ResourceId{ResourceType: teamResourceType.Id})
 	if err != nil {
-		return nil, "", nil, err
+		return nil, nil, err
 	}
 
 	teams, nextPageLink, rateLimitData, err := b.client.ListAllTeams(ctx, nextPage)
@@ -42,13 +42,17 @@ func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 		if rateLimitData != nil {
 			outAnnotations.WithRateLimiting(rateLimitData)
 		}
-		return nil, "", outAnnotations, err
+		return nil, &rs.SyncOpResults{
+			Annotations: outAnnotations,
+		}, err
 	}
 
 	for _, team := range teams {
 		teamResource, err := parseIntoTeamResource(*team)
 		if err != nil {
-			return nil, "", outAnnotations, err
+			return nil, &rs.SyncOpResults{
+				Annotations: outAnnotations,
+			}, err
 		}
 
 		teamResources = append(teamResources, teamResource)
@@ -57,14 +61,19 @@ func (b *teamBuilder) List(ctx context.Context, _ *v2.ResourceId, pToken *pagina
 	if nextPageLink != "" {
 		nextPageToken, err = bag.NextToken(nextPageLink)
 		if err != nil {
-			return nil, "", outAnnotations, err
+			return nil, &rs.SyncOpResults{
+				Annotations: outAnnotations,
+			}, err
 		}
 	}
 
-	return teamResources, nextPageToken, outAnnotations, nil
+	return teamResources, &rs.SyncOpResults{
+		Annotations:   outAnnotations,
+		NextPageToken: nextPageToken,
+	}, nil
 }
 
-func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Entitlement, string, annotations.Annotations, error) {
+func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Entitlement, *rs.SyncOpResults, error) {
 	var outAnnotations annotations.Annotations
 
 	displayName := fmt.Sprintf("Member of %s", resource.DisplayName)
@@ -76,10 +85,13 @@ func (b *teamBuilder) Entitlements(_ context.Context, resource *v2.Resource, _ *
 		entitlement.WithDescription(description),
 	}
 
-	return []*v2.Entitlement{entitlement.NewAssignmentEntitlement(resource, teamPermissionName, assigmentOptions...)}, "", outAnnotations, nil
+	return []*v2.Entitlement{entitlement.NewAssignmentEntitlement(resource, teamPermissionName, assigmentOptions...)},
+		&rs.SyncOpResults{
+			Annotations: outAnnotations,
+		}, nil
 }
 
-func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagination.Token) ([]*v2.Grant, string, annotations.Annotations, error) {
+func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
 	var grantResources []*v2.Grant
 	outAnnotations := annotations.Annotations{}
 	logger := ctxzap.Extract(ctx)
@@ -91,12 +103,16 @@ func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 		if rateLimitData != nil {
 			outAnnotations.WithRateLimiting(rateLimitData)
 		}
-		return nil, "", outAnnotations, err
+		return nil, &rs.SyncOpResults{
+			Annotations: outAnnotations,
+		}, err
 	}
 
 	if teamDetails.Relationships == nil || teamDetails.Relationships.Users == nil || teamDetails.Relationships.Users.Data == nil {
 		logger.Warn(fmt.Sprintf("the team {%s} does not have any members", teamID))
-		return nil, "", outAnnotations, nil
+		return nil, &rs.SyncOpResults{
+			Annotations: outAnnotations,
+		}, nil
 	}
 
 	teamMembers := *teamDetails.Relationships.Users.Data
@@ -111,7 +127,9 @@ func (b *teamBuilder) Grants(ctx context.Context, resource *v2.Resource, _ *pagi
 		grantResources = append(grantResources, grant.NewGrant(resource, teamPermissionName, userResource))
 	}
 
-	return grantResources, "", outAnnotations, nil
+	return grantResources, &rs.SyncOpResults{
+		Annotations: outAnnotations,
+	}, nil
 }
 
 func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitlement *v2.Entitlement) (annotations.Annotations, error) {
