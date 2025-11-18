@@ -48,13 +48,31 @@ var (
 		field.WithDescription("The OAuth Authentication"),
 	)
 
+	oauth2ClientIdField = field.StringField("oauth2-client-id",
+		field.WithDisplayName("OAuth2 Client ID"),
+		field.WithDescription("The OAuth2 Client ID"),
+		field.WithRequired(false),
+		field.WithExportTarget(field.ExportTargetGUI),
+	)
+	
+	oauth2ClientSecretField = field.StringField("oauth2-client-secret",
+		field.WithDisplayName("OAuth2 Client Secret"),
+		field.WithDescription("The OAuth2 Client Secret"),
+		field.WithRequired(false),
+		field.WithIsSecret(true),
+		field.WithExportTarget(field.ExportTargetGUI),
+	)
+
 	ConfigurationFields = []field.SchemaField{
 		accessTokenField,
 
 		refreshToken,
 		outreachClientSecretField,
 		outreachClientIDField,
+		
 		oauth2TokenField,
+		oauth2ClientIdField,
+		oauth2ClientSecretField,
 	}
 
 	// FieldRelationships defines relationships between the ConfigurationFields that can be automatically validated.

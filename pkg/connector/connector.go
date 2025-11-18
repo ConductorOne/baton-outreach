@@ -151,6 +151,5 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 		return nil, nil, fmt.Errorf("connector initialization failed")
 	}
 
-	//[]connectorbuilder.Opt{connectorbuilder.WithSessionStore()} ?
 	return cb, nil, nil
 }
