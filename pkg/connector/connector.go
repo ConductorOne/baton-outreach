@@ -11,7 +11,6 @@ import (
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/cli"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
-	"github.com/conductorone/baton-sdk/pkg/field"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -118,9 +117,6 @@ func NewWithTokenSource(ctx context.Context, tokenSource oauth2.TokenSource) (*C
 func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
 	var cb *Connector
 	l := ctxzap.Extract(ctx)
-	if err := field.Validate(cfg.Config, config); err != nil {
-		return nil, nil, err
-	}
 
 	accessToken := config.AccessToken
 	if accessToken != "" {
