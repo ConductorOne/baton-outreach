@@ -52,7 +52,6 @@ var (
 		field.WithDisplayName("OAuth2 Client ID"),
 		field.WithDescription("The OAuth2 Client ID"),
 		field.WithRequired(false),
-		field.WithExportTarget(field.ExportTargetGUI),
 	)
 	
 	oauth2ClientSecretField = field.StringField("oauth2-client-secret",
@@ -60,7 +59,6 @@ var (
 		field.WithDescription("The OAuth2 Client Secret"),
 		field.WithRequired(false),
 		field.WithIsSecret(true),
-		field.WithExportTarget(field.ExportTargetGUI),
 	)
 
 	ConfigurationFields = []field.SchemaField{
