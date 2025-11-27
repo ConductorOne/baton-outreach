@@ -1,15 +1,6 @@
 {
   "fields": [
     {
-      "name": "access-token",
-      "displayName": "Access Token",
-      "description": "Generated access token to communicate with Outreach API. Only for CLI one-shot executions.",
-      "isSecret": true,
-      "stringField": {
-        "rules": {}
-      }
-    },
-    {
       "name": "log-level",
       "description": "The log level: debug, info, warn, error",
       "isOps": true,
@@ -22,6 +13,31 @@
       "description": "The timestamp indicating when debug-level logging should expire",
       "isOps": true,
       "stringField": {}
+    },
+    {
+      "name": "oauth2",
+      "displayName": "OAuth Authentication",
+      "description": "The OAuth Authentication",
+      "stringField": {
+        "type": "STRING_FIELD_TYPE_OAUTH2"
+      }
+    },
+    {
+      "name": "oauth2-client-id",
+      "displayName": "OAuth2 Client ID",
+      "description": "The OAuth2 Client ID",
+      "stringField": {
+        "rules": {}
+      }
+    },
+    {
+      "name": "oauth2-client-secret",
+      "displayName": "OAuth2 Client Secret",
+      "description": "The OAuth2 Client Secret",
+      "isSecret": true,
+      "stringField": {
+        "rules": {}
+      }
     },
     {
       "name": "otel-collector-endpoint",
@@ -60,53 +76,12 @@
       "boolField": {}
     },
     {
-      "name": "outreach-client-id",
-      "displayName": "Outreach application Client ID",
-      "description": "Generated Client ID to communicate with Outreach API. Only for CLI executions.",
-      "stringField": {
-        "rules": {}
+      "name": "session-store-maximum-size",
+      "description": "The maximum size of the local in-memory session store cache in bytes.",
+      "isOps": true,
+      "intField": {
+        "defaultValue": "15728640"
       }
-    },
-    {
-      "name": "outreach-client-secret",
-      "displayName": "Outreach application Client Secret",
-      "description": "Generated Client Secret to communicate with Outreach API. Only for CLI executions.",
-      "isSecret": true,
-      "stringField": {
-        "rules": {}
-      }
-    },
-    {
-      "name": "refresh-token",
-      "displayName": "Generated Refresh Token",
-      "description": "Refresh Token generated with code_grant auth type. Only for CLI executions.",
-      "stringField": {
-        "rules": {}
-      }
-    }
-  ],
-  "constraints": [
-    {
-      "kind": "CONSTRAINT_KIND_AT_LEAST_ONE",
-      "fieldNames": [
-        "access-token",
-        "refresh-token"
-      ]
-    },
-    {
-      "kind": "CONSTRAINT_KIND_MUTUALLY_EXCLUSIVE",
-      "fieldNames": [
-        "access-token",
-        "refresh-token"
-      ]
-    },
-    {
-      "kind": "CONSTRAINT_KIND_REQUIRED_TOGETHER",
-      "fieldNames": [
-        "outreach-client-secret",
-        "outreach-client-id",
-        "refresh-token"
-      ]
     }
   ],
   "displayName": "Outreach",
