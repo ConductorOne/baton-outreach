@@ -2,12 +2,17 @@ package connector
 
 import (
 	"context"
+	"fmt"
 	"io"
 
+	cfg "github.com/conductorone/baton-outreach/pkg/config"
 	"github.com/conductorone/baton-outreach/pkg/connector/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
+	"github.com/conductorone/baton-sdk/pkg/cli"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
 
@@ -16,8 +21,8 @@ type Connector struct {
 }
 
 // ResourceSyncers returns a ResourceSyncer for each resource type that should be synced from the upstream service.
-func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncer {
-	return []connectorbuilder.ResourceSyncer{
+func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncerV2 {
+	return []connectorbuilder.ResourceSyncerV2{
 		newUserBuilder(d.client),
 		newTeamBuilder(d.client),
 		newProfileBuilder(d.client),
@@ -106,4 +111,41 @@ func NewWithTokenSource(ctx context.Context, tokenSource oauth2.TokenSource) (*C
 	return &Connector{
 		client: c,
 	}, nil
+}
+
+// New returns the Outreach connector configured to sync against the instance URL.
+func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (connectorbuilder.ConnectorBuilderV2, []connectorbuilder.Opt, error) {
+	var cb *Connector
+	l := ctxzap.Extract(ctx)
+
+	accessToken := config.AccessToken
+	if accessToken != "" {
+		cbWithAccessToken, err := NewWithAccessToken(ctx, accessToken)
+		if err != nil {
+			l.Error("error creating connector with access token", zap.Error(err))
+			return nil, nil, err
+		}
+
+		cb = cbWithAccessToken
+	}
+
+	refreshToken := config.RefreshToken
+	outreachClientID := config.OutreachClientId
+	outreachClientSecret := config.OutreachClientSecret
+
+	if outreachClientID != "" && outreachClientSecret != "" && refreshToken != "" {
+		cbWithRefreshToken, err := NewWithRefreshToken(ctx, outreachClientID, outreachClientSecret, refreshToken)
+		if err != nil {
+			l.Error("error creating connector with refresh token", zap.Error(err))
+			return nil, nil, err
+		}
+
+		cb = cbWithRefreshToken
+	}
+
+	if cb == nil {
+		return nil, nil, fmt.Errorf("connector initialization failed")
+	}
+
+	return cb, nil, nil
 }
