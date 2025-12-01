@@ -53,7 +53,7 @@ var (
 		field.WithDescription("The OAuth2 Client ID"),
 		field.WithRequired(false),
 	)
-	
+
 	oauth2ClientSecretField = field.StringField("oauth2-client-secret",
 		field.WithDisplayName("OAuth2 Client Secret"),
 		field.WithDescription("The OAuth2 Client Secret"),
@@ -67,7 +67,7 @@ var (
 		refreshToken,
 		outreachClientSecretField,
 		outreachClientIDField,
-		
+
 		oauth2TokenField,
 		oauth2ClientIdField,
 		oauth2ClientSecretField,

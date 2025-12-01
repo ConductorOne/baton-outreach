@@ -47,7 +47,13 @@ func (b *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId,
 		}, fmt.Errorf("error listing users: %w", err)
 	}
 
-	session.SetManyJSON(ctx, attr.Session, parseJSONCache(users))
+	err = session.SetManyJSON(ctx, attr.Session, parseJSONCache(users))
+	if err != nil {
+		return nil, &rs.SyncOpResults{
+			Annotations: outAnnotations,
+		}, fmt.Errorf("error caching users in session: %w", err)
+	}
+
 	for _, user := range users {
 		userResource, err := parseIntoUserResource(*user)
 		if err != nil {
@@ -95,7 +101,7 @@ func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, attr rs
 	if found {
 		user = cachedUser
 	} else {
-		//user not found in cache
+		// user not found in cache
 		u, rateLimitData, err := b.client.GetUserByID(ctx, userID)
 		if err != nil {
 			if rateLimitData != nil {
