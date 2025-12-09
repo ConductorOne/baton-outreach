@@ -154,7 +154,6 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 		cb = cbWithTokenSource
 	}
 
-
 	if cb == nil {
 		return nil, nil, fmt.Errorf("connector initialization failed")
 	}
