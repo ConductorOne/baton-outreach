@@ -143,7 +143,7 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 		cb = cbWithRefreshToken
 	}
 
-	if accessToken == "" && refreshToken == "" {
+	if accessToken == "" && refreshToken == "" && opts.TokenSource != nil {
 		tokenSource := opts.TokenSource
 		cbWithTokenSource, err := NewWithTokenSource(ctx, tokenSource)
 		if err != nil {
