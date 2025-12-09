@@ -143,6 +143,18 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 		cb = cbWithRefreshToken
 	}
 
+	if accessToken == "" && refreshToken == "" {
+		tokenSource := opts.TokenSource
+		cbWithTokenSource, err := NewWithTokenSource(ctx, tokenSource)
+		if err != nil {
+			l.Error("error creating connector with token source", zap.Error(err))
+			return nil, nil, err
+		}
+
+		cb = cbWithTokenSource
+	}
+
+
 	if cb == nil {
 		return nil, nil, fmt.Errorf("connector initialization failed")
 	}
