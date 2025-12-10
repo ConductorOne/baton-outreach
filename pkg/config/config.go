@@ -77,7 +77,6 @@ var (
 	// For example, a username and password can be required together, or an access token can be
 	// marked as mutually exclusive from the username password pair.
 	FieldRelationships = []field.SchemaFieldRelationship{
-		field.FieldsAtLeastOneUsed(accessTokenField, refreshToken, oauth2TokenField),
 		field.FieldsMutuallyExclusive(accessTokenField, refreshToken, oauth2TokenField),
 		field.FieldsRequiredTogether(outreachClientSecretField, outreachClientIDField, refreshToken)}
 )
