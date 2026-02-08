@@ -13,16 +13,17 @@ import (
 )
 
 const (
-	authURL    = "https://api.outreach.io/oauth/token"
-	baseURL    = "https://api.outreach.io/api/v2"
-	usersEP    = "users"
-	teamsEP    = "teams"
-	profilesEP = "profiles"
+	authURL        = "https://api.outreach.io/oauth/token"
+	DefaultBaseURL = "https://api.outreach.io/api/v2"
+	usersEP        = "users"
+	teamsEP        = "teams"
+	profilesEP     = "profiles"
 )
 
 type OutreachClient struct {
 	client      *uhttp.BaseHttpClient
 	TokenSource oauth2.TokenSource
+	baseURL     string
 }
 
 func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) ([]*User, string, *v2.RateLimitDescription, error) {
@@ -35,7 +36,7 @@ func (c *OutreachClient) ListAllUsers(ctx context.Context, nextPageLink string) 
 	if nextPageLink != "" {
 		requestURL = nextPageLink
 	} else {
-		usersURL, err := url.JoinPath(baseURL, usersEP)
+		usersURL, err := url.JoinPath(c.baseURL, usersEP)
 		if err != nil {
 			return nil, "", nil, err
 		}
@@ -71,7 +72,7 @@ func (c *OutreachClient) GetUserByID(ctx context.Context, userID string) (*User,
 		User *User `json:"data"`
 	}
 
-	userURL, err := url.JoinPath(baseURL, usersEP, userID)
+	userURL, err := url.JoinPath(c.baseURL, usersEP, userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -119,7 +120,7 @@ func (c *OutreachClient) UpdateUserProfile(ctx context.Context, userID string, p
 		},
 	}
 
-	userURL, err := url.JoinPath(baseURL, usersEP, userID)
+	userURL, err := url.JoinPath(c.baseURL, usersEP, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +172,7 @@ func (c *OutreachClient) SetUserLocked(ctx context.Context, userID string, locke
 		},
 	}
 
-	userURL, err := url.JoinPath(baseURL, usersEP, userID)
+	userURL, err := url.JoinPath(c.baseURL, usersEP, userID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -197,7 +198,7 @@ func (c *OutreachClient) CreateUser(ctx context.Context, newUserInfo NewUserBody
 		User *User `json:"data"`
 	}
 
-	userURL, err := url.JoinPath(baseURL, usersEP)
+	userURL, err := url.JoinPath(c.baseURL, usersEP)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -228,7 +229,7 @@ func (c *OutreachClient) ListAllTeams(ctx context.Context, nextPageLink string) 
 	if nextPageLink != "" {
 		requestURL = nextPageLink
 	} else {
-		teamsURL, err := url.JoinPath(baseURL, teamsEP)
+		teamsURL, err := url.JoinPath(c.baseURL, teamsEP)
 		if err != nil {
 			return nil, "", nil, err
 		}
@@ -264,7 +265,7 @@ func (c *OutreachClient) GetTeamByID(ctx context.Context, teamID string) (*Team,
 		Team *Team `json:"data"`
 	}
 
-	teamURL, err := url.JoinPath(baseURL, teamsEP, teamID)
+	teamURL, err := url.JoinPath(c.baseURL, teamsEP, teamID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -295,7 +296,7 @@ func (c *OutreachClient) ListAllProfiles(ctx context.Context, nextPageLink strin
 	if nextPageLink != "" {
 		requestURL = nextPageLink
 	} else {
-		rolesURL, err := url.JoinPath(baseURL, profilesEP)
+		rolesURL, err := url.JoinPath(c.baseURL, profilesEP)
 		if err != nil {
 			return nil, "", nil, err
 		}
@@ -348,7 +349,7 @@ func (c *OutreachClient) UpdateTeamMembers(ctx context.Context, teamID string, t
 		},
 	}
 
-	teamURL, err := url.JoinPath(baseURL, teamsEP, teamID)
+	teamURL, err := url.JoinPath(c.baseURL, teamsEP, teamID)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +455,8 @@ func New(ctx context.Context, cOpts ...ConfigOption) (*OutreachClient, error) {
 	}
 
 	icClient := OutreachClient{
-		client: cli,
+		client:  cli,
+		baseURL: DefaultBaseURL,
 	}
 	for _, option := range cOpts {
 		option(&icClient)

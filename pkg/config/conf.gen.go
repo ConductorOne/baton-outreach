@@ -11,6 +11,7 @@ type Outreach struct {
 	Oauth2 string `mapstructure:"oauth2"`
 	Oauth2ClientId string `mapstructure:"oauth2-client-id"`
 	Oauth2ClientSecret string `mapstructure:"oauth2-client-secret"`
+	BaseUrl string `mapstructure:"base-url"`
 }
 
 func (c *Outreach) findFieldByTag(tagValue string) (any, bool) {
