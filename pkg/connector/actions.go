@@ -6,7 +6,6 @@ import (
 
 	"github.com/conductorone/baton-sdk/pkg/actions"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
-	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -64,20 +63,18 @@ var disableUserAction = &v2.BatonActionSchema{
 	},
 }
 
-func (c *Connector) RegisterActionManager(ctx context.Context) (connectorbuilder.CustomActionManager, error) {
-	actionManager := actions.NewActionManager(ctx)
-
-	err := actionManager.RegisterAction(ctx, enableUserAction.Name, enableUserAction, c.enableUser)
+func (c *Connector) GlobalActions(ctx context.Context, registry actions.ActionRegistry) error {
+	err := registry.Register(ctx, enableUserAction, c.enableUser)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = actionManager.RegisterAction(ctx, disableUserAction.Name, disableUserAction, c.disableUser)
+	err = registry.Register(ctx, disableUserAction, c.disableUser)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return actionManager, nil
+	return nil
 }
 
 func (c *Connector) enableUser(ctx context.Context, args *structpb.Struct) (*structpb.Struct, annotations.Annotations, error) {
