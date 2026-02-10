@@ -1,6 +1,6 @@
 ![Baton Logo](./baton-logo.png)
 
-# `baton-outreach` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-outreach.svg)](https://pkg.go.dev/github.com/conductorone/baton-outreach) ![main ci](https://github.com/conductorone/baton-outreach/actions/workflows/main.yaml/badge.svg)
+# `baton-outreach` [![Go Reference](https://pkg.go.dev/badge/github.com/conductorone/baton-outreach.svg)](https://pkg.go.dev/github.com/conductorone/baton-outreach) ![ci](https://github.com/conductorone/baton-outreach/actions/workflows/ci.yaml/badge.svg) ![verify](https://github.com/conductorone/baton-outreach/actions/workflows/verify.yaml/badge.svg)
 
 `baton-outreach` is a connector for [Outreach](https://www.outreach.io/) built using the [Baton SDK](https://github.com/conductorone/baton-sdk).
 
