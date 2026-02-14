@@ -14,6 +14,7 @@ var (
 
 	BaseURLField = field.StringField("base-url",
 		field.WithDescription("Override the Outreach API URL (for testing)"),
+		field.WithHidden(true),
 	)
 
 	accessTokenField = field.StringField("access-token",
