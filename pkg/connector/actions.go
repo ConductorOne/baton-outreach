@@ -17,6 +17,7 @@ import (
 const (
 	ActionEnableUser  = "enable_user"
 	ActionDisableUser = "disable_user"
+	successKey        = "success"
 )
 
 var enableUserAction = &v2.BatonActionSchema{
@@ -31,7 +32,7 @@ var enableUserAction = &v2.BatonActionSchema{
 	},
 	ReturnTypes: []*config.Field{
 		{
-			Name:        "success",
+			Name:        successKey,
 			DisplayName: "Success",
 			Field:       &config.Field_BoolField{},
 		},
@@ -53,7 +54,7 @@ var disableUserAction = &v2.BatonActionSchema{
 	},
 	ReturnTypes: []*config.Field{
 		{
-			Name:        "success",
+			Name:        successKey,
 			DisplayName: "Success",
 			Field:       &config.Field_BoolField{},
 		},
@@ -125,7 +126,7 @@ func (c *Connector) setUserState(ctx context.Context, args *structpb.Struct, ena
 		l.Warn("user enable operation completed but user is still locked", zap.String("user_id", userIDStr))
 		result := &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"success": structpb.NewBoolValue(false),
+				successKey: structpb.NewBoolValue(false),
 			},
 		}
 		return result, annos, nil
@@ -134,7 +135,7 @@ func (c *Connector) setUserState(ctx context.Context, args *structpb.Struct, ena
 		l.Warn("user disable operation completed but user is still unlocked", zap.String("user_id", userIDStr))
 		result := &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				"success": structpb.NewBoolValue(false),
+				successKey: structpb.NewBoolValue(false),
 			},
 		}
 		return result, annos, nil
@@ -142,7 +143,7 @@ func (c *Connector) setUserState(ctx context.Context, args *structpb.Struct, ena
 
 	result := &structpb.Struct{
 		Fields: map[string]*structpb.Value{
-			"success": structpb.NewBoolValue(true),
+			successKey: structpb.NewBoolValue(true),
 		},
 	}
 
