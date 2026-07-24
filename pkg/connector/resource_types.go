@@ -4,6 +4,10 @@ import (
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 )
 
+// ProfileResourceTypeID is the resource type ID for profiles, exported so it
+// can be referenced when checking the sync filter (WillSyncResourceType).
+const ProfileResourceTypeID = "profile"
+
 // The user resource type is for all user objects from the database.
 var userResourceType = &v2.ResourceType{
 	Id:          "user",
@@ -18,7 +22,7 @@ var teamResourceType = &v2.ResourceType{
 }
 
 var profileResourceType = &v2.ResourceType{
-	Id:          "profile",
+	Id:          ProfileResourceTypeID,
 	DisplayName: "Profile",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_ROLE},
 }

@@ -17,13 +17,14 @@ import (
 )
 
 type Connector struct {
-	client *client.OutreachClient
+	client       *client.OutreachClient
+	syncProfiles bool
 }
 
 // ResourceSyncers returns a ResourceSyncer for each resource type that should be synced from the upstream service.
 func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncerV2 {
 	return []connectorbuilder.ResourceSyncerV2{
-		newUserBuilder(d.client),
+		newUserBuilder(d.client, d.syncProfiles),
 		newTeamBuilder(d.client),
 		newProfileBuilder(d.client),
 	}
@@ -157,6 +158,8 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 	if cb == nil {
 		return nil, nil, fmt.Errorf("connector initialization failed")
 	}
+
+	cb.syncProfiles = opts == nil || opts.WillSyncResourceType(ProfileResourceTypeID)
 
 	return cb, nil, nil
 }
