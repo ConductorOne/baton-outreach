@@ -14,6 +14,7 @@ import (
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 type userBuilder struct {
@@ -22,20 +23,29 @@ type userBuilder struct {
 }
 
 func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
-	if b.syncProfiles {
+	// Clone the package-level resource type rather than mutating it (or
+	// returning the shared pointer directly) - other builders/instances
+	// share this same var.
+	rt, ok := proto.Clone(userResourceType).(*v2.ResourceType)
+	if !ok {
 		return userResourceType
 	}
 
-	// The profile resource type has been filtered out of this sync, so the
-	// cross-type profile grants this builder would otherwise emit are
-	// skipped (see Grants). Tell the sync engine there's nothing to gather
-	// for this resource type so it doesn't call Entitlements/Grants at all.
-	return &v2.ResourceType{
-		Id:          userResourceType.Id,
-		DisplayName: userResourceType.DisplayName,
-		Traits:      userResourceType.Traits,
-		Annotations: annotations.New(&v2.SkipEntitlementsAndGrants{}),
+	if b.syncProfiles {
+		// The user type has no entitlements of its own (see Entitlements),
+		// so the Entitlements phase can always be skipped for it. Grants
+		// must still run so the cross-type profile grants emitted below
+		// flow through.
+		rt.Annotations = append(rt.Annotations, annotations.New(&v2.SkipEntitlements{})...)
+	} else {
+		// The profile resource type has been filtered out of this sync, so
+		// the cross-type profile grants this builder would otherwise emit
+		// are skipped. Tell the sync engine to skip both Entitlements and
+		// Grants for this resource type entirely.
+		rt.Annotations = append(rt.Annotations, annotations.New(&v2.SkipEntitlementsAndGrants{})...)
 	}
+
+	return rt
 }
 
 func (b *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, attr rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
@@ -101,10 +111,6 @@ func (b *userBuilder) Entitlements(_ context.Context, _ *v2.Resource, _ rs.SyncO
 
 // Grants implements the Grants function for profiles resource.
 func (b *userBuilder) Grants(ctx context.Context, resource *v2.Resource, attr rs.SyncOpAttrs) ([]*v2.Grant, *rs.SyncOpResults, error) {
-	if !b.syncProfiles {
-		return nil, nil, nil
-	}
-
 	var grantResources []*v2.Grant
 	outAnnotations := annotations.Annotations{}
 

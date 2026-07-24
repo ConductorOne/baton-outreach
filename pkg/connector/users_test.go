@@ -136,38 +136,86 @@ func TestUserBuilder_Grants_ProfileSynced(t *testing.T) {
 	require.Equal(t, eopt.NewEntitlementID(expectedProfileResource, profilePermissionName), g.Entitlement.Id)
 }
 
+// TestUserBuilder_Grants_ProfileNotSynced verifies that Grants() behaves
+// identically regardless of syncProfiles - the gate now lives entirely at
+// the resource-type annotation level (see ResourceType tests below), not
+// inside Grants itself. With syncProfiles false, this still exercises the
+// real emission path and expects the same single profile grant as the
+// syncProfiles-true case.
 func TestUserBuilder_Grants_ProfileNotSynced(t *testing.T) {
 	ctx := context.Background()
 
-	// syncProfiles is false, so Grants must return immediately without
-	// touching the (nil) client or a session that would panic/error if
-	// actually invoked.
+	const userID = 42
+	const profileID = 7
+
+	user := &client.User{
+		Id:   userID,
+		Type: "user",
+		Relationships: &client.UserRelationships{
+			Profile: &struct {
+				Data *client.DataDetailPair `json:"data,omitempty"`
+			}{
+				Data: &client.DataDetailPair{Id: profileID, Type: "profile"},
+			},
+		},
+	}
+
+	userBytes, err := json.Marshal(user)
+	require.NoError(t, err)
+
+	store := newFakeSessionStore()
+	require.NoError(t, store.Set(ctx, "42", userBytes))
+
 	b := newUserBuilder(nil, false)
 
 	resource := &v2.Resource{
 		Id: &v2.ResourceId{ResourceType: userResourceType.Id, Resource: "42"},
 	}
 
-	grants, results, err := b.Grants(ctx, resource, rs.SyncOpAttrs{Session: nil})
+	grants, results, err := b.Grants(ctx, resource, rs.SyncOpAttrs{Session: store})
 	require.NoError(t, err)
-	require.Nil(t, results)
-	require.Nil(t, grants)
+	require.NotNil(t, results)
+	require.Len(t, grants, 1)
+
+	g := grants[0]
+	require.Equal(t, profileResourceType.Id, g.Entitlement.Resource.Id.ResourceType)
+
+	expectedProfileResource := &v2.Resource{
+		Id: &v2.ResourceId{
+			ResourceType: profileResourceType.Id,
+			Resource:     "7",
+		},
+	}
+	require.Equal(t, eopt.NewEntitlementID(expectedProfileResource, profilePermissionName), g.Entitlement.Id)
 }
 
 func TestUserBuilder_ResourceType_ProfileSynced(t *testing.T) {
+	preCount := len(userResourceType.GetAnnotations())
+
 	b := newUserBuilder(nil, true)
 	rt := b.ResourceType(context.Background())
 
 	require.Equal(t, userResourceType.Id, rt.Id)
 	rtAnnotations := annotations.Annotations(rt.GetAnnotations())
+	require.True(t, rtAnnotations.Contains(&v2.SkipEntitlements{}))
 	require.False(t, rtAnnotations.Contains(&v2.SkipEntitlementsAndGrants{}))
+
+	// The package-level var must never be mutated by ResourceType().
+	require.Equal(t, preCount, len(userResourceType.GetAnnotations()))
+	require.Zero(t, len(userResourceType.GetAnnotations()))
 }
 
 func TestUserBuilder_ResourceType_ProfileNotSynced(t *testing.T) {
+	preCount := len(userResourceType.GetAnnotations())
+
 	b := newUserBuilder(nil, false)
 	rt := b.ResourceType(context.Background())
 
 	require.Equal(t, userResourceType.Id, rt.Id)
 	rtAnnotations := annotations.Annotations(rt.GetAnnotations())
 	require.True(t, rtAnnotations.Contains(&v2.SkipEntitlementsAndGrants{}))
+
+	// The package-level var must never be mutated by ResourceType().
+	require.Equal(t, preCount, len(userResourceType.GetAnnotations()))
+	require.Zero(t, len(userResourceType.GetAnnotations()))
 }
