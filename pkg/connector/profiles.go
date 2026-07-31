@@ -137,9 +137,8 @@ func parseIntoProfileResource(prof client.Profile) (*v2.Resource, error) {
 		"is_admin":   prof.Attributes.IsAdmin,
 	}
 
-	profileTraits := []rs.RoleTraitOption{
-		rs.WithRoleProfile(profile),
-	}
+	profileTraits := []rs.RoleTraitOption{}
+	resourceOptions = append(resourceOptions, rs.WithResourceProfile(profile))
 
 	ret, err := rs.NewRoleResource(
 		prof.Attributes.Name,
