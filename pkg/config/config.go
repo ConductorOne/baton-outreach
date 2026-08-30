@@ -12,6 +12,11 @@ var (
 	// that will refresh automatically the access token when expired.
 	// Those flags should be used when executing the connector on the CLI in service mode.
 
+	BaseURLField = field.StringField("base-url",
+		field.WithDescription("Override the Outreach API URL (for testing)"),
+		field.WithHidden(true),
+	)
+
 	accessTokenField = field.StringField("access-token",
 		field.WithDisplayName("Access Token"),
 		field.WithDescription("Generated access token to communicate with Outreach API. Only for CLI one-shot executions."),
@@ -71,6 +76,8 @@ var (
 		oauth2TokenField,
 		oauth2ClientIdField,
 		oauth2ClientSecretField,
+
+		BaseURLField,
 	}
 
 	// FieldRelationships defines relationships between the ConfigurationFields that can be automatically validated.

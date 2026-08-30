@@ -163,7 +163,7 @@ func (b *teamBuilder) Grant(ctx context.Context, principal *v2.Resource, entitle
 	}
 	teamMembers = append(teamMembers, client.DataDetailPair{
 		Id:   userID,
-		Type: "user",
+		Type: userResourceTypeID,
 	})
 
 	rateLimitData, err = b.client.UpdateTeamMembers(ctx, teamID, teamMembers)
