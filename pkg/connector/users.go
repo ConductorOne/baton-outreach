@@ -14,14 +14,16 @@ import (
 	rs "github.com/conductorone/baton-sdk/pkg/types/resource"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 type userBuilder struct {
-	client *client.OutreachClient
+	client       *client.OutreachClient
+	resourceType *v2.ResourceType
 }
 
 func (b *userBuilder) ResourceType(_ context.Context) *v2.ResourceType {
-	return userResourceType
+	return b.resourceType
 }
 
 func (b *userBuilder) List(ctx context.Context, parentResourceID *v2.ResourceId, attr rs.SyncOpAttrs) ([]*v2.Resource, *rs.SyncOpResults, error) {
@@ -281,9 +283,23 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	return ret, nil
 }
 
-func newUserBuilder(c *client.OutreachClient) *userBuilder {
+// newUserBuilder returns the user syncer. Users have no entitlements of their
+// own, and their only grants are cross-type profile grants, so when profile is
+// excluded from the sync the grants pass is skipped too -- that also avoids the
+// per-user profile lookup whose result would be discarded.
+func newUserBuilder(c *client.OutreachClient, skipProfileResourceType bool) *userBuilder {
+	rt := proto.Clone(userResourceType).(*v2.ResourceType)
+	annos := annotations.Annotations(rt.GetAnnotations())
+	if skipProfileResourceType {
+		annos.Update(&v2.SkipEntitlementsAndGrants{})
+	} else {
+		annos.Update(&v2.SkipEntitlements{})
+	}
+	rt.Annotations = annos
+
 	return &userBuilder{
-		client: c,
+		client:       c,
+		resourceType: rt,
 	}
 }
 

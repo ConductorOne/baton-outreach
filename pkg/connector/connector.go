@@ -18,12 +18,16 @@ import (
 
 type Connector struct {
 	client *client.OutreachClient
+	// skipProfileResourceType reports whether profile is excluded from the sync
+	// filter. Named for the skip condition so the zero value is safe: a
+	// zero-value Connector{} is used to generate the capability set.
+	skipProfileResourceType bool
 }
 
 // ResourceSyncers returns a ResourceSyncer for each resource type that should be synced from the upstream service.
 func (d *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.ResourceSyncerV2 {
 	return []connectorbuilder.ResourceSyncerV2{
-		newUserBuilder(d.client),
+		newUserBuilder(d.client, d.skipProfileResourceType),
 		newTeamBuilder(d.client),
 		newProfileBuilder(d.client),
 	}
@@ -118,6 +122,14 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 	var cb *Connector
 	l := ctxzap.Extract(ctx)
 
+	// nil opts means no SDK-supplied token source and no sync filter.
+	var tokenSource oauth2.TokenSource
+	skipProfileResourceType := false
+	if opts != nil {
+		tokenSource = opts.TokenSource
+		skipProfileResourceType = !opts.WillSyncResourceType(ProfileResourceTypeID)
+	}
+
 	accessToken := config.AccessToken
 	if accessToken != "" {
 		cbWithAccessToken, err := NewWithAccessToken(ctx, accessToken)
@@ -143,8 +155,7 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 		cb = cbWithRefreshToken
 	}
 
-	if accessToken == "" && refreshToken == "" && opts.TokenSource != nil {
-		tokenSource := opts.TokenSource
+	if accessToken == "" && refreshToken == "" && tokenSource != nil {
 		cbWithTokenSource, err := NewWithTokenSource(ctx, tokenSource)
 		if err != nil {
 			l.Error("error creating connector with token source", zap.Error(err))
@@ -157,6 +168,7 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 	if cb == nil {
 		return nil, nil, fmt.Errorf("connector initialization failed")
 	}
+	cb.skipProfileResourceType = skipProfileResourceType
 
 	return cb, nil, nil
 }
