@@ -264,8 +264,6 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 		rs.WithLastLogin(user.Attributes.LastSignInAt),
 		rs.WithEmail(primaryEmail, true),
 		rs.WithUserLogin(primaryEmail),
-		rs.WithUserProfile(profile),
-		rs.WithStatus(userStatus),
 	)
 
 	ret, err := rs.NewUserResource(
@@ -273,6 +271,8 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 		userResourceType,
 		user.Id,
 		userTraits,
+		rs.WithResourceProfile(profile),
+		rs.WithResourceStatus(v2.Status_ResourceStatus(userStatus), ""),
 	)
 	if err != nil {
 		return nil, err

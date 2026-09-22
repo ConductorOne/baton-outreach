@@ -226,15 +226,14 @@ func parseIntoTeamResource(team client.Team) (*v2.Resource, error) {
 		"updated_at": team.Attributes.UpdatedAt,
 	}
 
-	groupTraits := []rs.GroupTraitOption{
-		rs.WithGroupProfile(profile),
-	}
+	groupTraits := []rs.GroupTraitOption{}
 
 	ret, err := rs.NewGroupResource(
 		team.Attributes.Name,
 		teamResourceType,
 		team.Id,
 		groupTraits,
+		rs.WithResourceProfile(profile),
 	)
 	if err != nil {
 		return nil, err
