@@ -5,6 +5,8 @@ import (
 )
 
 // The user resource type is for all user objects from the database.
+// newUserBuilder clones this and adds SkipEntitlements, or
+// SkipEntitlementsAndGrants when profile isn't synced.
 var userResourceType = &v2.ResourceType{
 	Id:          "user",
 	DisplayName: "User",
@@ -17,8 +19,11 @@ var teamResourceType = &v2.ResourceType{
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
 }
 
+// ProfileResourceTypeID is referenced when gating cross-type profile grants.
+const ProfileResourceTypeID = "profile"
+
 var profileResourceType = &v2.ResourceType{
-	Id:          "profile",
+	Id:          ProfileResourceTypeID,
 	DisplayName: "Profile",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_ROLE},
 }
