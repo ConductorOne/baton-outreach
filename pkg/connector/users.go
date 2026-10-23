@@ -196,7 +196,7 @@ func createNewUserInfo(accountInfo *v2.AccountInfo) (*client.NewUserBody, error)
 			Type       string                   `json:"type"` // The type should always be 'user'.
 			Attributes client.NewUserAttributes `json:"attributes"`
 		}{
-			Type: "user",
+			Type: userResourceTypeID,
 			Attributes: client.NewUserAttributes{
 				Email:     email,
 				FirstName: firstName,

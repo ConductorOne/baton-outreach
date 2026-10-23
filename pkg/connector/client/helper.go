@@ -82,6 +82,14 @@ func WithAccessToken(accessToken string) ConfigOption {
 	}
 }
 
+func WithBaseURL(baseURL string) ConfigOption {
+	return func(client *OutreachClient) {
+		if baseURL != "" {
+			client.baseURL = baseURL
+		}
+	}
+}
+
 type ErrorResponse struct {
 	Error       string `json:"error"`
 	Description string `json:"description"`

@@ -74,8 +74,8 @@ func (d *Connector) Validate(_ context.Context) (annotations.Annotations, error)
 }
 
 // NewWithAccessToken returns a new instance of the connector created for CLI one-shot executions.
-func NewWithAccessToken(ctx context.Context, accessToken string) (*Connector, error) {
-	c, err := client.New(ctx, client.WithAccessToken(accessToken))
+func NewWithAccessToken(ctx context.Context, accessToken, baseURL string) (*Connector, error) {
+	c, err := client.New(ctx, client.WithAccessToken(accessToken), client.WithBaseURL(baseURL))
 	if err != nil {
 		return nil, err
 	}
@@ -86,8 +86,8 @@ func NewWithAccessToken(ctx context.Context, accessToken string) (*Connector, er
 }
 
 // NewWithRefreshToken returns a new instance of the connector created for CLI with automatic token refresh.
-func NewWithRefreshToken(ctx context.Context, clientID, clientSecret, refreshToken string) (*Connector, error) {
-	c, err := client.New(ctx, client.WithRefreshToken(ctx, clientID, clientSecret, refreshToken))
+func NewWithRefreshToken(ctx context.Context, clientID, clientSecret, refreshToken, baseURL string) (*Connector, error) {
+	c, err := client.New(ctx, client.WithRefreshToken(ctx, clientID, clientSecret, refreshToken), client.WithBaseURL(baseURL))
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +98,10 @@ func NewWithRefreshToken(ctx context.Context, clientID, clientSecret, refreshTok
 }
 
 // NewWithTokenSource returns a new instance of the connector using a provided Token Source.
-func NewWithTokenSource(ctx context.Context, tokenSource oauth2.TokenSource) (*Connector, error) {
+func NewWithTokenSource(ctx context.Context, tokenSource oauth2.TokenSource, baseURL string) (*Connector, error) {
 	clientOptions := []client.ConfigOption{
 		client.WithTokenSource(tokenSource),
+		client.WithBaseURL(baseURL),
 	}
 
 	c, err := client.New(ctx, clientOptions...)
@@ -118,9 +119,11 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 	var cb *Connector
 	l := ctxzap.Extract(ctx)
 
+	baseURL := config.BaseUrl
+
 	accessToken := config.AccessToken
 	if accessToken != "" {
-		cbWithAccessToken, err := NewWithAccessToken(ctx, accessToken)
+		cbWithAccessToken, err := NewWithAccessToken(ctx, accessToken, baseURL)
 		if err != nil {
 			l.Error("error creating connector with access token", zap.Error(err))
 			return nil, nil, err
@@ -134,7 +137,7 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 	outreachClientSecret := config.OutreachClientSecret
 
 	if outreachClientID != "" && outreachClientSecret != "" && refreshToken != "" {
-		cbWithRefreshToken, err := NewWithRefreshToken(ctx, outreachClientID, outreachClientSecret, refreshToken)
+		cbWithRefreshToken, err := NewWithRefreshToken(ctx, outreachClientID, outreachClientSecret, refreshToken, baseURL)
 		if err != nil {
 			l.Error("error creating connector with refresh token", zap.Error(err))
 			return nil, nil, err
@@ -145,7 +148,7 @@ func New(ctx context.Context, config *cfg.Outreach, opts *cli.ConnectorOpts) (co
 
 	if accessToken == "" && refreshToken == "" && opts.TokenSource != nil {
 		tokenSource := opts.TokenSource
-		cbWithTokenSource, err := NewWithTokenSource(ctx, tokenSource)
+		cbWithTokenSource, err := NewWithTokenSource(ctx, tokenSource, baseURL)
 		if err != nil {
 			l.Error("error creating connector with token source", zap.Error(err))
 			return nil, nil, err
