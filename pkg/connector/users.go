@@ -242,7 +242,7 @@ func isActive(user client.User) bool {
 
 func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	var userTraits []rs.UserTraitOption
-	var userStatus v2.UserTrait_Status_Status
+	var userStatus v2.Status_ResourceStatus
 	primaryEmail := user.Attributes.Email
 
 	profile := map[string]interface{}{
@@ -255,9 +255,9 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 	}
 
 	if user.Attributes.Locked {
-		userStatus = v2.UserTrait_Status_STATUS_DISABLED
+		userStatus = v2.Status_RESOURCE_STATUS_DISABLED
 	} else {
-		userStatus = v2.UserTrait_Status_STATUS_ENABLED
+		userStatus = v2.Status_RESOURCE_STATUS_ENABLED
 	}
 
 	userTraits = append(userTraits,
@@ -272,7 +272,7 @@ func parseIntoUserResource(user client.User) (*v2.Resource, error) {
 		user.Id,
 		userTraits,
 		rs.WithResourceProfile(profile),
-		rs.WithResourceStatus(v2.Status_ResourceStatus(userStatus), ""),
+		rs.WithResourceStatus(userStatus, ""),
 	)
 	if err != nil {
 		return nil, err
